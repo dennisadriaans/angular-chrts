@@ -20,7 +20,7 @@ import {
 } from '@unovis/angular';
 import { Timeline } from '@unovis/ts';
 import { LegendPosition, BulletLegendItemInterface } from '../types';
-import { TooltipComponent } from '../tooltip/tooltip.component';
+import { TooltipComponent } from '../tooltip';
 
 // Cached date formatter instance for better performance
 const cachedDateFormatter = new Intl.DateTimeFormat();
@@ -99,30 +99,76 @@ const dateFormatter = (date: number | Date) => cachedDateFormatter.format(typeof
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class GanttChartComponent<T extends Record<string, any>> {
+  /** The data to be displayed in the gantt chart. */
   readonly data = input.required<T[]>();
+  
+  /** The height of the chart in pixels. */
   readonly height = input<number>();
+  
+  /** Configuration for each category mapping to the items. Keyed by category property name. */
   readonly categories = input.required<Record<string, BulletLegendItemInterface>>();
+  
+  /** Function to retrieve the start value for a task. */
   readonly x = input.required<(d: T) => number>();
+  
+  /** Function to retrieve the duration/length for a task. */
   readonly length = input.required<(d: T) => number>();
+  
+  /** Function to retrieve the type/category of the timeline item (for coloring). */
   readonly type = input.required<(d: T) => string>();
+  
+  /** Width of the labels column on the left. Default is 220. */
   readonly labelWidth = input<number>(220);
+  
+  /** Optional title for the chart. */
   readonly title = input<string>('');
+  
+  /** Whether to show labels on the timeline. */
   readonly showLabels = input<boolean>(true);
+  
+  /** Whether to hide the tooltip. */
   readonly hideTooltip = input<boolean>(false);
+  
+  /** Thickness of the timeline bars. Default is 12. */
   readonly lineWidth = input<number>(12);
+  
+  /** Height of each row in the chart. Default is 24. */
   readonly rowHeight = input<number>(24);
+  
+  /** Position of the legend. Default is TopRight. */
   readonly legendPosition = input<LegendPosition>(LegendPosition.TopRight);
+  
+  /** Custom styles for the legend. */
   readonly legendStyle = input<Record<string, string>>();
+  
+  /** Whether to hide the legend. */
   readonly hideLegend = input<boolean>(false);
+  
+  /** Number of ticks on the X axis. */
   readonly xNumTicks = input<number>();
+  
+  /** Whether to show tick lines on the X axis. */
   readonly xTickLine = input<boolean>();
+  
+  /** Formatter for X axis tick labels. */
   readonly xTickFormat = input<(tick: number | Date, i?: number, ticks?: (number | Date)[]) => string>();
+  
+  /** Whether to show grid lines on the X axis. */
   readonly xGridLine = input<boolean>();
+  
+  /** Whether to show domain line on the X axis. */
   readonly xDomainLine = input<boolean>();
+  
+  /** Formatter for the tooltip title. */
   readonly tooltipTitleFormatter = input<(data: T) => string | number>();
 
+  /** Event emitted when a timeline item is clicked. */
   readonly clickEvent = output<{ event: MouseEvent; data: { index: number; item: T } }>();
+  
+  /** Event emitted on scroll activity. */
   readonly scrollEvent = output<number>();
+  
+  /** Event emitted when a label is hovered. */
   readonly labelHover = output<T | undefined>();
 
   readonly tooltipWrapper = viewChild<ElementRef<HTMLDivElement>>('tooltipWrapper');

@@ -19,7 +19,7 @@ import {
 } from '@unovis/angular';
 import { Donut } from '@unovis/ts';
 import { LegendPosition, BulletLegendItemInterface } from '../types';
-import { TooltipComponent } from '../tooltip/tooltip.component';
+import { TooltipComponent } from '../tooltip';
 import { DonutType } from './types';
 
 @Component({
@@ -95,18 +95,40 @@ import { DonutType } from './types';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DonutChartComponent {
+  /** The data to be displayed in the donut chart as an array of values. */
   readonly data = input.required<number[]>();
+  
+  /** The height of the chart in pixels. Default is 400. */
   readonly height = input<number>(400);
+  
+  /** Configuration for each category mapping to the data segments. Keyed by category property name. */
   readonly categories = input.required<Record<string, BulletLegendItemInterface>>();
+  
+  /** The type of donut chart (Full or Half). */
   readonly type = input<DonutType>(DonutType.Full);
+  
+  /** Inner radius of the donut segments. */
   readonly radius = input<number>(0);
+  
+  /** Width of the donut arcs. Default is 20. */
   readonly arcWidth = input<number>(20);
+  
+  /** Angle between donut segments. Default is 0. */
   readonly padAngle = input<number>(0);
+  
+  /** Whether to hide the legend. */
   readonly hideLegend = input<boolean>(false);
+  
+  /** Position of the legend relative to the chart. Default is BottomCenter. */
   readonly legendPosition = input<LegendPosition>(LegendPosition.BottomCenter);
+  
+  /** Custom styles for the legend container. */
   readonly legendStyle = input<Record<string, string>>();
+  
+  /** Formatter for the tooltip title. */
   readonly tooltipTitleFormatter = input<(data: any) => string | number>();
 
+  /** Event emitted when a donut segment is clicked. */
   readonly click = output<{ event: MouseEvent; values?: any }>();
 
   readonly tooltipWrapper = viewChild<ElementRef<HTMLDivElement>>('tooltipWrapper');

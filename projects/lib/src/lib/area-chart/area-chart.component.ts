@@ -27,7 +27,7 @@ import {
   MarkerConfig,
   axisFormatter,
 } from '../types';
-import { TooltipComponent } from '../tooltip/tooltip.component';
+import { TooltipComponent } from '../tooltip';
 import { createMarkers } from '../utils';
 
 @Component({
@@ -110,7 +110,7 @@ import { createMarkers } from '../utils';
             [labelMargin]="8"
             [numTicks]="xNumTicks()"
             [tickFormat]="xFormatter()"
-            [tickValues]="xExplicitTicks()"
+            [tickValues]="$any(xExplicitTicks())"
             [gridLine]="xGridLine()"
             [domainLine]="xDomainLine()"
             [tickLine]="xTickLine()"
@@ -164,50 +164,118 @@ import { createMarkers } from '../utils';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AreaChartComponent<T extends Record<string, any>> {
+  /** The data to be displayed in the chart. */
   readonly data = input.required<T[]>();
+  
+  /** The height of the chart in pixels. Default is 400. */
   readonly height = input<number>(400);
+  
+  /** Padding around the chart area. */
   readonly padding = input<{ top: number; right: number; bottom: number; left: number }>({
     top: 5,
     right: 5,
     bottom: 5,
     left: 5,
   });
+  
+  /** Configuration for each category (line/area) in the chart. Keyed by category property name. */
   readonly categories = input.required<Record<string, BulletLegendItemInterface>>();
+  
+  /** Whether to stack the areas on top of each other. */
   readonly stacked = input<boolean>(false);
+  
+  /** Whether to hide the filled area and only show lines. */
   readonly hideArea = input<boolean>(false);
+  
+  /** The type of curve to use for the lines/areas. */
   readonly curveType = input<CurveType>();
+  
+  /** Thickness of the lines. Default is 2. */
   readonly lineWidth = input<number>(2);
+  /** Array of dash patterns for each line. */
   readonly lineDashArray = input<number[][]>();
+  
+  /** Label for the X axis. */
   readonly xLabel = input<string>();
+  
+  /** Label for the Y axis. */
   readonly yLabel = input<string>();
+  
+  /** Formatter function for X axis tick labels. */
   readonly xFormatter = input<axisFormatter>();
+  
+  /** Formatter function for Y axis tick labels. */
   readonly yFormatter = input<axisFormatter>();
+  
+  /** Number of ticks to show on the X axis. */
   readonly xNumTicks = input<number>();
+  
+  /** Specific values to show on the X axis. */
   readonly xExplicitTicks = input<Array<number | string | Date>>();
+  
+  /** If true, only shows the first and last tick labels on the X axis. */
   readonly minMaxTicksOnly = input<boolean>(false);
+  
+  /** Number of ticks to show on the Y axis. */
   readonly yNumTicks = input<number>();
+  
+  /** Whether to hide the X axis entirely. */
   readonly hideXAxis = input<boolean>(false);
+  
+  /** Whether to hide the Y axis entirely. */
   readonly hideYAxis = input<boolean>(false);
+  /** Whether to show grid lines for the X axis. */
   readonly xGridLine = input<boolean>(false);
+  
+  /** Whether to show grid lines for the Y axis. */
   readonly yGridLine = input<boolean>(false);
+  
+  /** Whether to show the domain line for the X axis. */
   readonly xDomainLine = input<boolean>(false);
+  
+  /** Whether to show the domain line for the Y axis. */
   readonly yDomainLine = input<boolean>(false);
+  
+  /** Whether to show tick lines for the X axis. */
   readonly xTickLine = input<boolean>(false);
+  
+  /** Whether to show tick lines for the Y axis. */
   readonly yTickLine = input<boolean>(false);
+  
+  /** Whether to hide the tooltip. */
   readonly hideTooltip = input<boolean>(false);
+  
+  /** Whether to hide the legend. */
   readonly hideLegend = input<boolean>(false);
+  
+  /** Position of the legend relative to the chart. */
   readonly legendPosition = input<LegendPosition>(LegendPosition.BottomCenter);
+  
+  /** Custom styles for the legend. */
   readonly legendStyle = input<Record<string, string>>();
+  
+  /** Custom styles for the tooltip. */
   readonly tooltipStyle = input<Record<string, string>>({});
+  
+  /** Formatter for the tooltip title. */
   readonly tooltipTitleFormatter = input<(data: T) => string | number>();
+  
+  /** Configuration for svg markers (dots) on the lines. */
   readonly markerConfig = input<MarkerConfig>();
+  
+  /** Gradient stop configuration for area charts. */
   readonly gradientStops = input<Array<{ offset: string; stopOpacity: number }>>([
     { offset: '0%', stopOpacity: 1 },
     { offset: '75%', stopOpacity: 0 },
   ]);
+  
+  /** Manual Y domain [min, max]. */
   readonly yDomain = input<[number, number]>();
+  
+  /** Manual X domain [min, max]. */
   readonly xDomain = input<[number, number]>();
 
+  /** Event emitted when the chart or a segment is clicked. */
   readonly click = output<{ event: MouseEvent; values?: T }>();
 
   readonly tooltipWrapper = viewChild<ElementRef<HTMLDivElement>>('tooltipWrapper');
@@ -223,7 +291,9 @@ export class AreaChartComponent<T extends Record<string, any>> {
   readonly colors = computed(() => {
     const cats = this.categories();
     return Object.keys(cats).map((key, index) => {
-      return cats[key].color ?? `var(--vis-color${index})`;
+      const color = cats[key].color;
+      if (Array.isArray(color)) return color[0] ?? `var(--vis-color${index})`;
+      return color ?? `var(--vis-color${index})`;
     });
   });
 

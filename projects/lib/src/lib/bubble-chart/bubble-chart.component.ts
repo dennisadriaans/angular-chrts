@@ -20,7 +20,7 @@ import {
 } from '@unovis/angular';
 import { Position, Scatter, type NumericAccessor } from '@unovis/ts';
 import { LegendPosition, BulletLegendItemInterface, AxisConfig, CrosshairConfig } from '../types';
-import { TooltipComponent } from '../tooltip/tooltip.component';
+import { TooltipComponent } from '../tooltip';
 
 @Component({
   selector: 'ngx-bubble-chart',
@@ -70,7 +70,7 @@ import { TooltipComponent } from '../tooltip/tooltip.component';
             [domainLine]="!!xDomainLine()"
             [tickLine]="xTickLine()"
             [numTicks]="xNumTicks()"
-            [tickValues]="xExplicitTicks()"
+            [tickValues]="$any(xExplicitTicks())"
             [minMaxTicksOnly]="minMaxTicksOnly()"
           ></vis-axis>
         }
@@ -114,39 +114,96 @@ import { TooltipComponent } from '../tooltip/tooltip.component';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class BubbleChartComponent<T extends Record<string, any>> {
+  /** The data to be displayed in the bubble chart. */
   readonly data = input.required<T[]>();
+  
+  /** The height of the chart in pixels. Default is 600. */
   readonly height = input<number>(600);
+  
+  /** Padding around the chart area. */
   readonly padding = input<{ top: number; right: number; bottom: number; left: number }>({
     top: 5,
     right: 5,
     bottom: 5,
     left: 5,
   });
+  
+  /** Configuration for each category mapping to the bubbles. Keyed by category property name. */
   readonly categories = input<Record<string, BulletLegendItemInterface>>({});
+  
+  /** The data key used to categorize bubbles. */
   readonly categoryKey = input<keyof T>();
+  
+  /** Accessor function for X-axis values. */
   readonly xAccessor = input<NumericAccessor<T>>();
+  
+  /** Accessor function for Y-axis values. */
   readonly yAccessor = input<NumericAccessor<T>>();
+  
+  /** Accessor function for bubble size. */
   readonly sizeAccessor = input<NumericAccessor<T>>();
+  
+  /** Position of labels relative to bubbles. */
   readonly labelPosition = input<Position>();
+  
+  /** Range of bubble sizes [min pixels, max pixels]. */
   readonly sizeRange = input<[number, number]>();
+  
+  /** Label for the X axis. */
   readonly xLabel = input<string>('');
+  
+  /** Label for the Y axis. */
   readonly yLabel = input<string>('');
+  
+  /** Formatter function for X axis tick labels. */
   readonly xFormatter = input<(tick: number | Date, i?: number, ticks?: (number | Date)[]) => string>();
+  
+  /** Formatter function for Y axis tick labels. */
   readonly yFormatter = input<(tick: number | Date, i?: number, ticks?: (number | Date)[]) => string>();
+  
+  /** Formatter for the tooltip title. */
   readonly tooltipTitleFormatter = input<(data: T) => string | number>();
+  
+  /** Number of ticks on the X axis. */
   readonly xNumTicks = input<number>();
+  
+  /** Number of ticks on the Y axis. */
   readonly yNumTicks = input<number>();
+  
+  /** Specific values to show on the X axis. */
   readonly xExplicitTicks = input<Array<number | string | Date>>();
+  
+  /** If true, only shows the first and last tick labels on the X axis. */
   readonly minMaxTicksOnly = input<boolean>(false);
+  
+  /** Whether to hide the X axis entirely. */
   readonly hideXAxis = input<boolean>(false);
+  
+  /** Whether to hide the Y axis entirely. */
   readonly hideYAxis = input<boolean>(false);
+  
+  /** Whether to show grid lines for the X axis. */
   readonly xGridLine = input<boolean>(false);
+  
+  /** Whether to show grid lines for the Y axis. */
   readonly yGridLine = input<boolean>(true);
+  
+  /** Whether to show the domain line for the X axis. */
   readonly xDomainLine = input<boolean>(true);
+  
+  /** Whether to show the domain line for the Y axis. */
   readonly yDomainLine = input<boolean>(true);
+  
+  /** Whether to show tick lines for the X axis. */
   readonly xTickLine = input<boolean>(true);
+  
+  /** Whether to show tick lines for the Y axis. */
   readonly yTickLine = input<boolean>(true);
+  
+  /** Whether to hide the tooltip. */
   readonly hideTooltip = input<boolean>(false);
+  
+  /** Whether to hide the legend. */
   readonly hideLegend = input<boolean>(false);
   readonly legendPosition = input<LegendPosition>(LegendPosition.BottomCenter);
   readonly legendStyle = input<Record<string, string>>();

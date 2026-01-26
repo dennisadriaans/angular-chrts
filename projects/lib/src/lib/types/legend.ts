@@ -45,3 +45,9 @@ export interface BulletLegendItemInterface {
    */
   pointer?: boolean;
 }
+
+/**
+ * Alias for BulletLegendItemInterface specifically for area charts.
+ * This improves developer experience by providing a more context-specific type name.
+ */
+export type AreaChartCategory = BulletLegendItemInterface;

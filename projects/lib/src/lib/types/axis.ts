@@ -7,9 +7,13 @@
  * Formatter function for axis tick labels.
  * Supports both numeric and date-based axes.
  */
-export type AxisFormatter =
-  | ((tick: number, i?: number, ticks?: number[]) => string)
-  | ((tick: Date, i?: number, ticks?: Date[]) => string);
+export type AxisTick = number | Date;
+
+/**
+ * Formatter function for axis tick labels.
+ * Supports both numeric and date-based axes.
+ */
+export type AxisFormatter = (tick: AxisTick, i?: number, ticks?: AxisTick[]) => string;
 
 /**
  * Configuration for chart axes (X and Y).
@@ -71,5 +75,5 @@ export interface AxisConfig {
   /**
    * Explicit tick values to display
    */
-  tickValues?: readonly number[] | readonly Date[];
+  tickValues?: readonly AxisTick[];
 }

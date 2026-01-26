@@ -32,10 +32,16 @@ export function getDistributedIndices(length: number, numTicks: number) {
   return indices;
 }
 
-export function getFirstPropertyValue(obj: any) {
-  if (obj && Object.keys(obj).length > 0) {
-    const firstKey = Object.keys(obj)[0];
-    return obj[firstKey];
+/**
+ * Retrieves the value of the first property in an object.
+ * Useful for default labels when no specific formatter is provided.
+ */
+export function getFirstPropertyValue<T>(obj: Record<string, T> | null | undefined): T | undefined {
+  if (obj && typeof obj === 'object') {
+    const keys = Object.keys(obj);
+    if (keys.length > 0) {
+      return obj[keys[0]];
+    }
   }
   return undefined;
 }

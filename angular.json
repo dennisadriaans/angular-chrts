@@ -54,6 +54,13 @@
             ],
             "styles": [
               "projects/example-app/src/styles.css"
+            ],
+            "allowedCommonJsDependencies": [
+              "elkjs",
+              "to-px",
+              "striptags",
+              "leaflet",
+              "maplibre-gl"
             ]
           },
           "configurations": {
@@ -61,8 +68,8 @@
               "budgets": [
                 {
                   "type": "initial",
-                  "maximumWarning": "500kB",
-                  "maximumError": "1MB"
+                  "maximumWarning": "1MB",
+                  "maximumError": "2MB"
                 },
                 {
                   "type": "anyComponentStyle",

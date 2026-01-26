@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { BulletLegendItemInterface, axisFormatter } from '../types';
+import { getFirstPropertyValue } from '../utils';
 
 @Component({
   selector: 'ngx-tooltip',
@@ -34,9 +35,16 @@ import { BulletLegendItemInterface, axisFormatter } from '../types';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TooltipComponent<T extends Record<string, any>> {
+  /** The data object representing current hover state. */
   readonly data = input.required<T>();
+  
+  /** Legend configuration mapping keys to labels. */
   readonly categories = input.required<Record<string, BulletLegendItemInterface>>();
+  
+  /** Optional formatter for the tooltip title. */
   readonly titleFormatter = input<(data: T) => string | number>();
+  
+  /** Optional formatter for the values. */
   readonly yFormatter = input<axisFormatter>();
 
   readonly titleFormat = computed(() => {
@@ -44,12 +52,7 @@ export class TooltipComponent<T extends Record<string, any>> {
     const formatter = this.titleFormatter();
     if (formatter) return formatter(data);
     
-    // getFirstPropertyValue equivalent
-    if (data && Object.keys(data).length > 0) {
-      const firstKey = Object.keys(data)[0];
-      return data[firstKey];
-    }
-    return undefined;
+    return getFirstPropertyValue(data);
   });
 
   private readonly keyBlockList = ['_index', '_stacked', '_ending'];

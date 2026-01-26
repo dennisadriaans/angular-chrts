@@ -6,7 +6,7 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { CurveType } from '@unovis/ts';
-import { AreaChartComponent } from '../area-chart/area-chart.component';
+import { AreaChartComponent } from '../area-chart';
 import { LegendPosition, axisFormatter, AxisConfig, MarkerConfig, BulletLegendItemInterface } from '../types';
 
 @Component({
