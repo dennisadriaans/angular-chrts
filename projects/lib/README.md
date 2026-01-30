@@ -48,4 +48,10 @@ export class MyDataComponent {
 - `BubbleChartComponent`
 - `GanttChartComponent`
 
-For full documentation and examples, visit the [main repository](https://github.com/dennisadriaansen/angular-chrts).
+## Documentation
+
+For full documentation and examples, visit [angularcharts.com/docs](https://angularcharts.com/docs).
+
+For the website, visit [angularcharts.com](https://angularcharts.com/).
+
+For the repository, visit the [main GitHub page](https://github.com/dennisadriaansen/angular-chrts).

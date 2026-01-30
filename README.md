@@ -5,6 +5,11 @@
 
 **Angular Charts** is a high-performance, developer-friendly data visualization library for modern Angular applications. Based on [Unovis](https://unovis.dev/), it provides a suite of pre-built, Signals-powered components that make creating beautiful, responsive charts effortless.
 
+## 📖 Resources
+
+- [**Website**](https://nuxtcharts.com/)
+- [**Documentation**](https://nuxtcharts.com/docs)
+
 ## Why Choose Angular Charts?
 
 - 🚀 **Performance First**: Built with Angular Signals for efficient, fine-grained reactivity.
