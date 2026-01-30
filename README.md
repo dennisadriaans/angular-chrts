@@ -1,60 +1,104 @@
-# Angular
+# Angular Charts (`angular-chrts`)
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 20.3.6.
+[![NPM Version](https://img.shields.io/npm/v/angular-chrts.svg)](https://www.npmjs.com/package/angular-chrts)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-## Development server
+**Angular Charts** is a high-performance, developer-friendly data visualization library for modern Angular applications. Based on [Unovis](https://unovis.dev/), it provides a suite of pre-built, Signals-powered components that make creating beautiful, responsive charts effortless.
 
-To start a local development server, run:
+## Why Choose Angular Charts?
+
+- 🚀 **Performance First**: Built with Angular Signals for efficient, fine-grained reactivity.
+- 🎨 **Beautiful by Default**: Clean, modern design with easy customization via CSS variables.
+- 📦 **Declarative API**: Easy-to-use components that feel native to Angular.
+- 📊 **Versatile Data Visualization**: Support for Bar, Line, Area, Donut, Bubble, and Gantt charts.
+- 🛠 **Powered by Unovis**: Leverages the power of the battle-tested Unovis visualization framework for robust Angular charts.
+
+## Installation
+
+Install the package via npm or pnpm:
 
 ```bash
+# Using npm
+npm install angular-chrts @unovis/angular @unovis/ts
+
+# Using pnpm
+pnpm add angular-chrts @unovis/angular @unovis/ts
+```
+
+## Quick Start: Build your first Angular Chart
+
+Simply import the chart component you need and start visualizing your data.
+
+### 📊 Bar Chart Example
+
+```typescript
+import { Component } from '@angular/core';
+import { BarChartComponent } from 'angular-chrts';
+
+@Component({
+  selector: 'app-root',
+  standalone: true,
+  imports: [BarChartComponent],
+  template: `
+    <ngx-bar-chart
+      [data]="chartData"
+      [categories]="categories"
+      [height]="400"
+      xLabel="Month"
+      yLabel="Revenue ($)"
+    />
+  `
+})
+export class AppComponent {
+  chartData = [
+    { month: 'Jan', revenue: 4500 },
+    { month: 'Feb', revenue: 5200 },
+    { month: 'Mar', revenue: 4800 },
+  ];
+
+  categories = {
+    revenue: {
+      label: 'Monthly Revenue',
+      color: '#3b82f6'
+    }
+  };
+}
+```
+
+## Supported Chart Types
+
+| Chart Type | Key Features |
+| :--- | :--- |
+| **Line Chart** | Smooth curves, markers, multi-category support. |
+| **Bar Chart** | Grouped or stacked bars, horizontal/vertical orientation. |
+| **Area Chart** | Stacked or overlay areas, custom gradients. |
+| **Donut Chart** | Highly customizable central labels, legend integration. |
+| **Bubble Chart** | 3D data visualization with customizable point sizing. |
+| **Gantt Chart** | Specialized timeline visualization for project management. |
+
+## Customization & Styling
+
+Angular Charts icons support extensive styling through inputs and global CSS variables. You can easily control:
+- Colors and Gradients
+- Axis formatting and labels
+- Tooltip content and styling
+- Legend positioning (Top, Bottom, Left, Right)
+
+## Development
+
+If you want to contribute or build the project locally:
+
+```bash
+# Install dependencies
+pnpm install
+
+# Start the example app
 ng serve
+
+# Build the library
+ng build lib
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+## License
 
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
-
-```bash
-ng generate component component-name
-```
-
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
-
-```bash
-ng generate --help
-```
-
-## Building
-
-To build the project run:
-
-```bash
-ng build
-```
-
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Karma](https://karma-runner.github.io) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
-# angular-chrts
+MIT © [Dennis Adriaansen](https://github.com/dennisadriaansen)
