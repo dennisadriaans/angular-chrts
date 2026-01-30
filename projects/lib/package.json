@@ -1,6 +1,6 @@
 {
   "name": "angular-chrts",
-  "version": "0.1.0-beta.1",
+  "version": "0.1.0-beta.2",
   "peerDependencies": {
     "@angular/common": "^20.3.0",
     "@angular/core": "^20.3.0",
