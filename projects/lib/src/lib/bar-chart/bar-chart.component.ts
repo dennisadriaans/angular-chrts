@@ -20,8 +20,8 @@ import {
   VisStackedBarModule,
 } from '@unovis/angular';
 import { GroupedBar, Orientation, StackedBar } from '@unovis/ts';
-import { LegendPosition, BulletLegendItemInterface, AxisConfig } from '../types';
-import { TooltipComponent } from '../tooltip';
+import { LegendPosition, BulletLegendItemInterface, AxisConfig } from '../types/index';
+import { TooltipComponent } from '../tooltip/tooltip.component';
 import { ValueLabel } from './types';
 
 @Component({
@@ -85,7 +85,7 @@ import { ValueLabel } from './types';
             [domainLine]="!!xDomainLine()"
             [tickLine]="xTickLine()"
             [numTicks]="xNumTicks()"
-            [tickValues]="$any(xExplicitTicks())"
+            [tickValues]="xExplicitTicksValues()"
             [minMaxTicksOnly]="minMaxTicksOnly()"
           ></vis-axis>
         }
@@ -183,6 +183,7 @@ export class BarChartComponent<T extends Record<string, any>> {
   
   /** Specific values to show on the X axis. */
   readonly xExplicitTicks = input<Array<number | string | Date>>();
+  readonly xExplicitTicksValues = computed(() => this.xExplicitTicks() as any);
   
   /** If true, only shows the first and last tick labels on the X axis. */
   readonly minMaxTicksOnly = input<boolean>(false);

@@ -23,11 +23,11 @@ import {
 import { CurveType, Position } from '@unovis/ts';
 import {
   BulletLegendItemInterface,
-  LegendPosition,
-  MarkerConfig,
-  axisFormatter,
-} from '../types';
-import { TooltipComponent } from '../tooltip';
+} from '../types/legend';
+import { LegendPosition } from '../types/legend';
+import { MarkerConfig } from '../types/common';
+import { AxisFormatter as axisFormatter } from '../types/axis';
+import { TooltipComponent } from '../tooltip/tooltip.component';
 import { createMarkers } from '../utils';
 
 @Component({
@@ -54,6 +54,10 @@ import { createMarkers } from '../utils';
       [id]="markerConfig()?.id"
       (click)="onClick($event)"
     >
+      <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+        <defs [innerHTML]="svgDefs()"></defs>
+        <defs [innerHTML]="markerSvgDefs()"></defs>
+      </svg>
       <vis-xy-container
         [data]="data()"
         [height]="height()"
@@ -110,7 +114,7 @@ import { createMarkers } from '../utils';
             [labelMargin]="8"
             [numTicks]="xNumTicks()"
             [tickFormat]="xFormatter()"
-            [tickValues]="$any(xExplicitTicks())"
+            [tickValues]="xExplicitTicksValues()"
             [gridLine]="xGridLine()"
             [domainLine]="xDomainLine()"
             [tickLine]="xTickLine()"
@@ -212,6 +216,7 @@ export class AreaChartComponent<T extends Record<string, any>> {
   
   /** Specific values to show on the X axis. */
   readonly xExplicitTicks = input<Array<number | string | Date>>();
+  readonly xExplicitTicksValues = computed(() => this.xExplicitTicks() as any);
   
   /** If true, only shows the first and last tick labels on the X axis. */
   readonly minMaxTicksOnly = input<boolean>(false);

@@ -1,14 +1,14 @@
 {
   "name": "angular-chrts",
-  "version": "0.1.0-beta.2",
+  "version": "0.1.0-beta.3",
   "peerDependencies": {
-    "@angular/common": "^20.3.0",
-    "@angular/core": "^20.3.0",
-    "@unovis/angular": "^1.6.2",
-    "@unovis/ts": "^1.6.2"
+    "@angular/common": "^19.0.0",
+    "@angular/core": "^19.0.0"
   },
   "dependencies": {
-    "tslib": "^2.3.0"
+    "tslib": "^2.3.0",
+    "@unovis/angular": "^1.6.4",
+    "@unovis/ts": "^1.6.4"
   },
   "sideEffects": false
 }

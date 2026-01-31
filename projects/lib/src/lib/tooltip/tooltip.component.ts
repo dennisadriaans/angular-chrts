@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { BulletLegendItemInterface, axisFormatter } from '../types';
+import { BulletLegendItemInterface } from '../types/legend';
+import { AxisFormatter as axisFormatter } from '../types/axis';
 import { getFirstPropertyValue } from '../utils';
 
 @Component({
