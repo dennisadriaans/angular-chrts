@@ -1,0 +1,57 @@
+/**
+ * Container Config Builder
+ *
+ * Pure function for building Unovis XYContainer configuration.
+ *
+ * SOLID Principles:
+ * - SRP: Only responsible for container configuration
+ * - OCP: New container options can be added without modifying existing code
+ */
+
+import type { Area, Line, Axis, Crosshair, Tooltip } from '@unovis/ts';
+
+/**
+ * Options for building container configuration.
+ */
+export interface ContainerConfigOptions<T> {
+  height: number;
+  padding: { top: number; right: number; bottom: number; left: number };
+  yDomain?: [number, number];
+  xDomain?: [number, number];
+  components: Array<Area<T> | Line<T>>;
+  xAxis?: Axis<T>;
+  yAxis?: Axis<T>;
+  crosshair?: Crosshair<T>;
+  tooltip?: Tooltip;
+}
+
+/**
+ * Builds configuration for an Unovis XYContainer.
+ *
+ * @param options - Container configuration options
+ * @returns Complete container configuration object
+ *
+ * @example
+ * ```typescript
+ * const config = buildContainerConfig({
+ *   height: 400,
+ *   padding: { top: 5, right: 5, bottom: 30, left: 40 },
+ *   components: [...areas, ...lines],
+ *   xAxis: xAxisInstance,
+ *   yAxis: yAxisInstance,
+ * });
+ * ```
+ */
+export function buildContainerConfig<T>(options: ContainerConfigOptions<T>): Record<string, unknown> {
+  return {
+    height: options.height,
+    padding: options.padding,
+    yDomain: options.yDomain,
+    xDomain: options.xDomain,
+    components: options.components,
+    xAxis: options.xAxis,
+    yAxis: options.yAxis,
+    crosshair: options.crosshair,
+    tooltip: options.tooltip,
+  };
+}

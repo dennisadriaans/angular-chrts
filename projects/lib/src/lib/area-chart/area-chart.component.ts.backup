@@ -1,21 +1,3 @@
-/**
- * Area Chart Component
- *
- * A flexible area chart component that wraps Unovis for Angular applications.
- * Supports both stacked and non-stacked modes with full customization.
- *
- * SOLID Principles Applied:
- * - SRP: Component focuses on Angular integration and template rendering
- * - OCP: Config builders allow extension without modification
- * - DIP: Depends on abstracted config builders and utilities
- *
- * Architecture:
- * - Types: ./types/ - All TypeScript interfaces
- * - Config: ./config/ - Pure config builder functions
- * - Utils: ./utils/ - Pure utility functions
- * - State: ./state/ - State management utilities
- */
-
 import {
   ChangeDetectionStrategy,
   ChangeDetectorRef,
@@ -44,27 +26,56 @@ import {
   CurveType,
   Position,
 } from '@unovis/ts';
-
-// Shared library types
 import { BulletLegendItemInterface, LegendPosition } from '../types/legend';
 import { MarkerConfig } from '../types/common';
 import { AxisFormatter as axisFormatter } from '../types/axis';
 import { TooltipComponent } from '../tooltip/tooltip.component';
 import { createMarkers } from '../utils/index';
 
-// Local extracted modules
-import type { StructuralSignature, GradientStop } from './types';
-import { buildAreaConfig, buildLineConfig, buildXAxisConfig, buildYAxisConfig, buildContainerConfig } from './config';
-import {
-  createStackedYAccessors,
-  createCumulativeYAccessors,
-  createSeriesDescriptors,
-  extractColors,
-  extractLegendItems,
-  generateGradientDefs,
-  generateMarkerCssVars,
-} from './utils';
-import { hasSignatureChanged } from './state';
+/**
+ * Describes a single data series in the chart.
+ * Used to generate consistent configuration for areas, lines, and SVG defs.
+ */
+interface SeriesDescriptor {
+  key: string;
+  color: string;
+  gradientId: string;
+  lineDashArray?: number[];
+}
+
+/**
+ * Signature of structural properties that require a full chart rebuild when changed.
+ */
+interface StructuralSignature {
+  stacked: boolean;
+  categoryKeys: string;
+  hideXAxis: boolean;
+  hideYAxis: boolean;
+  hideTooltip: boolean;
+}
+
+/**
+ * Configuration options for Area component.
+ */
+interface AreaConfig<T> {
+  x: (d: T, i: number) => number;
+  y: ((d: T) => number) | Array<(d: T) => number>;
+  color: string | string[];
+  opacity: number;
+  curveType: CurveType;
+}
+
+/**
+ * Configuration options for Line component.
+ */
+interface LineConfig<T> {
+  x: (d: T, i: number) => number;
+  y: ((d: T) => number) | Array<(d: T) => number>;
+  color: string | string[];
+  curveType: CurveType;
+  lineWidth: number;
+  lineDashArray?: number[];
+}
 
 @Component({
   selector: 'ngx-area-chart',
@@ -153,7 +164,7 @@ export class AreaChartComponent<T extends Record<string, any>> implements OnDest
   readonly markerConfig = input<MarkerConfig>();
 
   /** Gradient stop configuration for area charts. */
-  readonly gradientStops = input<GradientStop[]>([
+  readonly gradientStops = input<Array<{ offset: string; stopOpacity: number }>>([
     { offset: '0%', stopOpacity: 1 },
     { offset: '75%', stopOpacity: 0 },
   ]);
@@ -239,21 +250,24 @@ export class AreaChartComponent<T extends Record<string, any>> implements OnDest
   /** Event emitted when the chart or a segment is clicked. */
   readonly click = output<{ event: MouseEvent; values?: T }>();
 
-  // ===== INJECTED SERVICES =====
+  // Constants
+  private readonly DEFAULT_OPACITY = 0.5;
+
+  // Injected services
   private readonly platformId = inject(PLATFORM_ID);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly destroyRef = inject(DestroyRef);
 
-  // ===== TEMPLATE REFS =====
+  // Template refs
   readonly chartContainer = viewChild<ElementRef<HTMLDivElement>>('chartContainer');
   readonly legendContainer = viewChild<ElementRef<HTMLDivElement>>('legendContainer');
   readonly tooltipWrapper = viewChild<ElementRef<HTMLDivElement>>('tooltipWrapper');
 
-  // ===== STATE =====
+  // State
   readonly hoverValues = signal<T | undefined>(undefined);
   private lastSignature: StructuralSignature | null = null;
 
-  // ===== UNOVIS INSTANCES =====
+  // Unovis instances
   private container: XYContainer<T> | null = null;
   private areas: Area<T>[] = [];
   private lines: Line<T>[] = [];
@@ -263,10 +277,17 @@ export class AreaChartComponent<T extends Record<string, any>> implements OnDest
   private tooltip: Tooltip | null = null;
   private legend: BulletLegend | null = null;
 
-  // ===== COMPUTED VALUES =====
+  // Computed values
   readonly categoryKeys = computed(() => Object.keys(this.categories()));
 
-  readonly colors = computed(() => extractColors(this.categories()));
+  readonly colors = computed(() => {
+    const cats = this.categories();
+    return Object.keys(cats).map((key, index) => {
+      const color = cats[key].color;
+      if (Array.isArray(color)) return color[0] ?? `var(--vis-color${index})`;
+      return color ?? `var(--vis-color${index})`;
+    });
+  });
 
   readonly isLegendTop = computed(() => this.legendPosition().startsWith('top'));
 
@@ -277,12 +298,34 @@ export class AreaChartComponent<T extends Record<string, any>> implements OnDest
     return 'center';
   });
 
-  readonly legendItems = computed(() => extractLegendItems(this.categories()));
+  readonly legendItems = computed(() => {
+    return Object.values(this.categories()).map((item) => ({
+      ...item,
+      color: Array.isArray(item.color) ? item.color[0] : item.color,
+    }));
+  });
 
-  readonly series = computed(() =>
-    createSeriesDescriptors(this.categoryKeys(), this.colors(), this.lineDashArray())
-  );
+  /**
+   * Series descriptors for consistent configuration across areas, lines, and SVG defs.
+   * Single source of truth for series styling.
+   */
+  readonly series = computed((): SeriesDescriptor[] => {
+    const keys = this.categoryKeys();
+    const colors = this.colors();
+    const lineDashArray = this.lineDashArray();
 
+    return keys.map((key, index) => ({
+      key,
+      color: colors[index],
+      gradientId: this.getGradientId(index, colors[index]),
+      lineDashArray: lineDashArray?.[index],
+    }));
+  });
+
+  /**
+   * Structural signature that determines when a full rebuild is required.
+   * Changes to any of these values require destroying and recreating Unovis instances.
+   */
   readonly structuralSignature = computed((): StructuralSignature => ({
     stacked: this.stacked(),
     categoryKeys: this.categoryKeys().join(','),
@@ -291,9 +334,22 @@ export class AreaChartComponent<T extends Record<string, any>> implements OnDest
     hideTooltip: this.hideTooltip(),
   }));
 
-  readonly svgDefs = computed(() =>
-    generateGradientDefs(this.colors(), this.gradientStops())
-  );
+  readonly svgDefs = computed(() => {
+    const stops = this.gradientStops();
+    const colors = this.colors();
+
+    return colors
+      .map((color, index) => {
+        const id = `gradient-${index}-${color.replace(/#/g, '')}`;
+        return `
+        <linearGradient id="${id}" gradientTransform="rotate(90)">
+          ${stops.map((stop) => `<stop offset="${stop.offset}" stop-color="${color}" stop-opacity="${stop.stopOpacity}" />`).join('')}
+          <stop offset="100%" stop-color="${color}" stop-opacity="0" />
+        </linearGradient>
+      `;
+      })
+      .join('');
+  });
 
   readonly markerSvgDefs = computed(() => {
     const config = this.markerConfig();
@@ -301,9 +357,17 @@ export class AreaChartComponent<T extends Record<string, any>> implements OnDest
     return createMarkers(config);
   });
 
-  readonly markerCssVars = computed(() => generateMarkerCssVars(this.markerConfig()));
+  readonly markerCssVars = computed(() => {
+    const config = this.markerConfig();
+    if (!config?.config) return {};
 
-  // ===== CONSTRUCTOR =====
+    const vars: Record<string, string> = {};
+    for (const key of Object.keys(config.config)) {
+      vars[`--vis-marker-${key}`] = `url("#${config.id}-${key}")`;
+    }
+    return vars;
+  });
+
   constructor() {
     this.initializeChartEffect();
     this.initializeLegendEffect();
@@ -316,6 +380,8 @@ export class AreaChartComponent<T extends Record<string, any>> implements OnDest
 
   // ===== LIFECYCLE EFFECTS =====
   private initializeChartEffect(): void {
+    // Sync chart after view is ready (browser only)
+    // Uses signature-based detection to determine if rebuild is needed
     effect(() => {
       const container = this.chartContainer();
       const data = this.data();
@@ -330,6 +396,7 @@ export class AreaChartComponent<T extends Record<string, any>> implements OnDest
   }
 
   private initializeLegendEffect(): void {
+    // Update legend when items change, destroy when hidden
     effect(() => {
       const legendContainer = this.legendContainer();
       const items = this.legendItems();
@@ -337,6 +404,7 @@ export class AreaChartComponent<T extends Record<string, any>> implements OnDest
 
       if (!isPlatformBrowser(this.platformId)) return;
 
+      // Destroy legend when hidden
       if (hideLegend) {
         this.legend?.destroy();
         this.legend = null;
@@ -349,39 +417,67 @@ export class AreaChartComponent<T extends Record<string, any>> implements OnDest
     });
   }
 
-  // ===== CHART SYNC =====
+  // ===== CHART SYNC (SINGLE ENTRY POINT) =====
+  /**
+   * Main synchronization method that determines whether to initialize, rebuild, or update.
+   * This eliminates bugs from structural changes like toggling stacked mode.
+   */
   private syncChart(element: HTMLElement, data: T[], signature: StructuralSignature): void {
-    const needsRebuild = hasSignatureChanged(signature, this.lastSignature);
+    const needsRebuild = this.hasSignatureChanged(signature);
 
     if (!this.container) {
+      // First initialization
       this.initializeChart(element, data);
       this.lastSignature = signature;
     } else if (needsRebuild) {
+      // Structural change detected - full rebuild required
       this.destroyChart();
       this.initializeChart(element, data);
       this.lastSignature = signature;
     } else {
+      // In-place update only
       this.updateChart(data);
     }
   }
 
+  /**
+   * Checks if structural signature has changed, requiring a rebuild.
+   */
+  private hasSignatureChanged(current: StructuralSignature): boolean {
+    if (!this.lastSignature) return false;
+
+    return (
+      this.lastSignature.stacked !== current.stacked ||
+      this.lastSignature.categoryKeys !== current.categoryKeys ||
+      this.lastSignature.hideXAxis !== current.hideXAxis ||
+      this.lastSignature.hideYAxis !== current.hideYAxis ||
+      this.lastSignature.hideTooltip !== current.hideTooltip
+    );
+  }
+
   // ===== CHART INITIALIZATION =====
   private initializeChart(element: HTMLElement, data: T[]): void {
+    const stacked = this.stacked();
+
+    // Reset component arrays
     this.areas = [];
     this.lines = [];
 
-    if (this.stacked()) {
+    // Create areas and lines based on mode
+    if (stacked) {
       this.createStackedComponents();
     } else {
       this.createNonStackedComponents();
     }
 
+    // Create axes and tooltip
     this.createAxes();
     this.createTooltip();
 
+    // Create container
     this.container = new XYContainer<T>(
       element,
-      this.getContainerConfig(),
+      this.buildContainerConfig(),
       data,
     );
   }
@@ -390,17 +486,19 @@ export class AreaChartComponent<T extends Record<string, any>> implements OnDest
   private updateChart(data: T[]): void {
     if (!this.container) return;
 
+    // Update areas and lines based on mode
     if (this.stacked()) {
       this.updateStackedComponents();
     } else {
       this.updateNonStackedComponents();
     }
 
+    // Update axes and container
     this.updateAxes();
     this.updateContainer(data);
   }
-
-  // ===== LEGEND & CLEANUP =====
+// ===== LEGEND & CLEANUP =====
+  
   private updateLegend(element: HTMLElement, items: BulletLegendItemInterface[]): void {
     if (!this.legend) {
       this.legend = new BulletLegend(element, { items });
@@ -421,8 +519,8 @@ export class AreaChartComponent<T extends Record<string, any>> implements OnDest
     this.crosshair = null;
     this.tooltip = null;
   }
-
-  // ===== EVENT HANDLERS =====
+// ===== EVENT HANDLERS =====
+  
   private onCrosshairUpdate = (d: T): string => {
     this.hoverValues.set(d);
     this.cdr.detectChanges();
@@ -433,52 +531,160 @@ export class AreaChartComponent<T extends Record<string, any>> implements OnDest
     this.click.emit({ event, values: this.hoverValues() });
   }
 
-  // ===== COMPONENT CREATION =====
+  // ===== HELPER METHODS - ACCESSORS =====
+  private createStackedYAccessors(keys: string[]): Array<(d: T) => number> {
+    return keys.map((key) => (d: T) => Number(d[key]));
+  }
+
+  private createCumulativeYAccessors(keys: string[]): Array<(d: T) => number> {
+    return keys.map((_, index) => (d: T) => {
+      let sum = 0;
+      for (let i = 0; i <= index; i++) {
+        sum += Number(d[keys[i]]) || 0;
+      }
+      return sum;
+    });
+  }
+
+  private getGradientId(index: number, color: string): string {
+    return `gradient-${index}-${color.replace(/#/g, '')}`;
+  }
+
+  // ===== CONFIG BUILDERS (DRY - Single source of truth) =====
+  
+  /**
+   * Builds Area component configuration.
+   * Used for both stacked and non-stacked modes.
+   */
+  private buildAreaConfig(options: {
+    y: ((d: T) => number) | Array<(d: T) => number>;
+    color: string | string[];
+  }): AreaConfig<T> {
+    return {
+      x: (_: T, i: number) => i,
+      y: options.y,
+      color: options.color,
+      opacity: this.hideArea() ? 0 : this.DEFAULT_OPACITY,
+      curveType: this.curveType() ?? CurveType.MonotoneX,
+    };
+  }
+
+  /**
+   * Builds Line component configuration.
+   * Used for both stacked and non-stacked modes.
+   */
+  private buildLineConfig(options: {
+    y: ((d: T) => number) | Array<(d: T) => number>;
+    color: string | string[];
+    lineDashArray?: number[];
+  }): LineConfig<T> {
+    return {
+      x: (_: T, i: number) => i,
+      y: options.y,
+      color: options.color,
+      curveType: this.curveType() ?? CurveType.MonotoneX,
+      lineWidth: this.lineWidth(),
+      lineDashArray: options.lineDashArray,
+    };
+  }
+
+  // ===== HELPER METHODS - COMPONENT CREATION =====
+  private getDrawableComponents(): Array<Area<T> | Line<T>> {
+    return [...this.areas, ...this.lines];
+  }
+
+  private buildXAxisConfig(): Record<string, unknown> {
+    return {
+      type: 'x',
+      position: Position.Bottom,
+      label: this.xLabel(),
+      labelMargin: 8,
+      numTicks: this.xNumTicks(),
+      tickFormat: this.xFormatter(),
+      tickValues: this.xExplicitTicksValues(),
+      gridLine: this.xGridLine(),
+      domainLine: this.xDomainLine(),
+      tickLine: this.xTickLine(),
+      minMaxTicksOnly: this.minMaxTicksOnly(),
+    };
+  }
+
+  private buildYAxisConfig(): Record<string, unknown> {
+    return {
+      type: 'y',
+      label: this.yLabel(),
+      numTicks: this.yNumTicks(),
+      tickFormat: this.yFormatter(),
+      gridLine: this.yGridLine(),
+      domainLine: this.yDomainLine(),
+      tickLine: this.yTickLine(),
+    };
+  }
+
+  private buildContainerConfig(): Record<string, unknown> {
+    return {
+      height: this.height(),
+      padding: this.padding(),
+      yDomain: this.yDomain(),
+      xDomain: this.xDomain(),
+      components: this.getDrawableComponents(),
+      xAxis: this.xAxis ?? undefined,
+      yAxis: this.yAxis ?? undefined,
+      crosshair: this.crosshair ?? undefined,
+      tooltip: this.tooltip ?? undefined,
+    };
+  }
+
   private createNonStackedComponents(): void {
     const seriesData = this.series();
-    const styleParams = this.getStyleParams();
 
     for (const s of seriesData) {
       const yAccessor = (d: T) => Number(d[s.key]);
-
-      const areaConfig = buildAreaConfig<T>(
-        { y: yAccessor, color: `url(#${s.gradientId})` },
-        styleParams
-      );
+      
+      const areaConfig = this.buildAreaConfig({
+        y: yAccessor,
+        color: `url(#${s.gradientId})`,
+      });
       this.areas.push(new Area<T>(areaConfig));
 
-      const lineConfig = buildLineConfig<T>(
-        { y: yAccessor, color: s.color, lineDashArray: s.lineDashArray },
-        { lineWidth: this.lineWidth(), curveType: this.curveType() }
-      );
+      const lineConfig = this.buildLineConfig({
+        y: yAccessor,
+        color: s.color,
+        lineDashArray: s.lineDashArray,
+      });
       this.lines.push(new Line<T>(lineConfig));
     }
   }
 
+  /**
+   * Creates stacked mode components (single Area and Line with multiple y accessors).
+   */
   private createStackedComponents(): void {
     const keys = this.categoryKeys();
     const colors = this.colors();
-    const yAccessors = createStackedYAccessors<T>(keys);
-    const lineYAccessors = createCumulativeYAccessors<T>(keys);
-    const styleParams = this.getStyleParams();
+    const yAccessors = this.createStackedYAccessors(keys);
+    const lineYAccessors = this.createCumulativeYAccessors(keys);
 
-    const areaConfig = buildAreaConfig<T>({ y: yAccessors, color: colors }, styleParams);
+    const areaConfig = this.buildAreaConfig({
+      y: yAccessors,
+      color: colors,
+    });
     this.areas.push(new Area<T>(areaConfig));
 
-    const lineConfig = buildLineConfig<T>(
-      { y: lineYAccessors, color: colors },
-      { lineWidth: this.lineWidth(), curveType: this.curveType() }
-    );
+    const lineConfig = this.buildLineConfig({
+      y: lineYAccessors,
+      color: colors,
+    });
     this.lines.push(new Line<T>(lineConfig));
   }
 
   private createAxes(): void {
     if (!this.hideXAxis()) {
-      this.xAxis = new Axis<T>(this.getXAxisConfig());
+      this.xAxis = new Axis<T>(this.buildXAxisConfig());
     }
 
     if (!this.hideYAxis()) {
-      this.yAxis = new Axis<T>(this.getYAxisConfig());
+      this.yAxis = new Axis<T>(this.buildYAxisConfig());
     }
   }
 
@@ -495,104 +701,70 @@ export class AreaChartComponent<T extends Record<string, any>> implements OnDest
     });
   }
 
-  // ===== COMPONENT UPDATE =====
+  // ===== HELPER METHODS - COMPONENT UPDATE =====
+  
+  /**
+   * Updates non-stacked mode components using series descriptors.
+   */
   private updateNonStackedComponents(): void {
     const seriesData = this.series();
-    const styleParams = this.getStyleParams();
 
     seriesData.forEach((s, index) => {
       const yAccessor = (d: T) => Number(d[s.key]);
-
-      const areaConfig = buildAreaConfig<T>(
-        { y: yAccessor, color: `url(#${s.gradientId})` },
-        styleParams
-      );
+      
+      const areaConfig = this.buildAreaConfig({
+        y: yAccessor,
+        color: `url(#${s.gradientId})`,
+      });
       this.areas[index]?.setConfig(areaConfig);
 
-      const lineConfig = buildLineConfig<T>(
-        { y: yAccessor, color: s.color, lineDashArray: s.lineDashArray },
-        { lineWidth: this.lineWidth(), curveType: this.curveType() }
-      );
+      const lineConfig = this.buildLineConfig({
+        y: yAccessor,
+        color: s.color,
+        lineDashArray: s.lineDashArray,
+      });
       this.lines[index]?.setConfig(lineConfig);
     });
   }
 
+  /**
+   * Updates stacked mode components.
+   */
   private updateStackedComponents(): void {
     const keys = this.categoryKeys();
     const colors = this.colors();
-    const yAccessors = createStackedYAccessors<T>(keys);
-    const lineYAccessors = createCumulativeYAccessors<T>(keys);
-    const styleParams = this.getStyleParams();
+    const yAccessors = this.createStackedYAccessors(keys);
+    const lineYAccessors = this.createCumulativeYAccessors(keys);
 
-    const areaConfig = buildAreaConfig<T>({ y: yAccessors, color: colors }, styleParams);
+    const areaConfig = this.buildAreaConfig({
+      y: yAccessors,
+      color: colors,
+    });
     this.areas[0]?.setConfig(areaConfig);
 
-    const lineConfig = buildLineConfig<T>(
-      { y: lineYAccessors, color: colors },
-      { lineWidth: this.lineWidth(), curveType: this.curveType() }
-    );
+    const lineConfig = this.buildLineConfig({
+      y: lineYAccessors,
+      color: colors,
+    });
     this.lines[0]?.setConfig(lineConfig);
   }
 
   private updateAxes(): void {
     if (this.xAxis) {
-      this.xAxis.setConfig(this.getXAxisConfig());
+      this.xAxis.setConfig(this.buildXAxisConfig());
     }
 
     if (this.yAxis) {
-      this.yAxis.setConfig(this.getYAxisConfig());
+      this.yAxis.setConfig(this.buildYAxisConfig());
     }
   }
 
   private updateContainer(data: T[]): void {
     if (!this.container) return;
-    this.container.updateContainer(this.getContainerConfig());
+
+    // Unovis expects a full container config on update; otherwise defaults may wipe components/axes.
+    this.container.updateContainer(this.buildContainerConfig());
+
     this.container.setData(data);
-  }
-
-  // ===== CONFIG HELPERS =====
-  private getStyleParams() {
-    return {
-      hideArea: this.hideArea(),
-      curveType: this.curveType(),
-    };
-  }
-
-  private getXAxisConfig() {
-    return buildXAxisConfig({
-      label: this.xLabel(),
-      numTicks: this.xNumTicks(),
-      tickFormat: this.xFormatter(),
-      tickValues: this.xExplicitTicksValues(),
-      gridLine: this.xGridLine(),
-      domainLine: this.xDomainLine(),
-      tickLine: this.xTickLine(),
-      minMaxTicksOnly: this.minMaxTicksOnly(),
-    });
-  }
-
-  private getYAxisConfig() {
-    return buildYAxisConfig({
-      label: this.yLabel(),
-      numTicks: this.yNumTicks(),
-      tickFormat: this.yFormatter(),
-      gridLine: this.yGridLine(),
-      domainLine: this.yDomainLine(),
-      tickLine: this.yTickLine(),
-    });
-  }
-
-  private getContainerConfig() {
-    return buildContainerConfig({
-      height: this.height(),
-      padding: this.padding(),
-      yDomain: this.yDomain(),
-      xDomain: this.xDomain(),
-      components: [...this.areas, ...this.lines],
-      xAxis: this.xAxis ?? undefined,
-      yAxis: this.yAxis ?? undefined,
-      crosshair: this.crosshair ?? undefined,
-      tooltip: this.tooltip ?? undefined,
-    });
   }
 }
