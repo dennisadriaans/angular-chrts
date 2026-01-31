@@ -7,3 +7,6 @@ export * from './chart-utils';
 
 // SSR-safe browser utilities
 export * from './browser';
+
+// Shared utilities for chart components
+export * from './shared';

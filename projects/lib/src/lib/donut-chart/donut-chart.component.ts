@@ -1,3 +1,25 @@
+/**
+ * Donut Chart Component
+ *
+ * A configurable donut/pie chart component built on Unovis.
+ * Supports full and half-circle variants with optional legend and tooltip.
+ *
+ * SOLID Principles Applied:
+ * - SRP: Component only orchestrates, delegates to pure functions
+ * - OCP: Extended via configuration, not modification
+ * - DIP: Depends on abstractions (config builders) not concrete implementations
+ *
+ * @example
+ * ```html
+ * <ngx-donut-chart
+ *   [data]="[30, 45, 25]"
+ *   [categories]="{ a: { name: 'A', color: '#3b82f6' }, b: { name: 'B', color: '#ef4444' }, c: { name: 'C', color: '#22c55e' } }"
+ *   [type]="DonutType.Full"
+ * >
+ *   <span class="center-text">Total: 100</span>
+ * </ngx-donut-chart>
+ * ```
+ */
 import {
   ChangeDetectionStrategy,
   ChangeDetectorRef,
@@ -16,9 +38,23 @@ import {
 } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { SingleContainer, Donut, Tooltip, BulletLegend } from '@unovis/ts';
-import { LegendPosition, BulletLegendItemInterface } from '../types/index';
+import type { BulletLegendItemInterface } from '@unovis/ts';
+
+import { LegendPosition } from '../types/index';
 import { TooltipComponent } from '../tooltip/index';
-import { DonutType } from './types';
+
+import { DonutType, type DonutStructuralSignature } from './types';
+import { buildDonutConfig, buildDonutContainerConfig } from './config';
+import {
+  extractDonutColors,
+  extractDonutLegendItems,
+  getLegendAlignment,
+  isLegendAtTop,
+} from './utils';
+import {
+  createDonutStructuralSignature,
+  hasDonutSignatureChanged,
+} from './state';
 
 @Component({
   selector: 'ngx-donut-chart',
@@ -28,7 +64,7 @@ import { DonutType } from './types';
     <div
       class="ngx-donut-chart-wrapper"
       [style.display]="'flex'"
-      [style.flexDirection]="isLegendTop() ? 'column-reverse' : 'column'"
+      [style.flexDirection]="legendOnTop() ? 'column-reverse' : 'column'"
       [style.gap]="'var(--vis-legend-spacing, 8px)'"
       (click)="onClick($event)"
     >
@@ -48,7 +84,7 @@ import { DonutType } from './types';
           #legendContainer
           class="ngx-donut-chart-legend"
           [style.display]="'flex'"
-          [style.justifyContent]="legendAlignment()"
+          [style.justifyContent]="legendAlign()"
         ></div>
       }
 
@@ -67,19 +103,23 @@ import { DonutType } from './types';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DonutChartComponent implements OnDestroy {
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Inputs
+  // ─────────────────────────────────────────────────────────────────────────────
+
   /** The data to be displayed in the donut chart as an array of values. */
   readonly data = input.required<number[]>();
 
   /** The height of the chart in pixels. Default is 400. */
   readonly height = input<number>(400);
 
-  /** Configuration for each category mapping to the data segments. Keyed by category property name. */
+  /** Configuration for each category mapping to the data segments. */
   readonly categories = input.required<Record<string, BulletLegendItemInterface>>();
 
   /** The type of donut chart (Full or Half). */
   readonly type = input<DonutType>(DonutType.Full);
 
-  /** Inner radius of the donut segments. */
+  /** Corner radius of the donut segments. */
   readonly radius = input<number>(0);
 
   /** Width of the donut arcs. Default is 20. */
@@ -91,6 +131,9 @@ export class DonutChartComponent implements OnDestroy {
   /** Whether to hide the legend. */
   readonly hideLegend = input<boolean>(false);
 
+  /** Whether to hide the tooltip. */
+  readonly hideTooltip = input<boolean>(false);
+
   /** Position of the legend relative to the chart. Default is BottomCenter. */
   readonly legendPosition = input<LegendPosition>(LegendPosition.BottomCenter);
 
@@ -100,76 +143,87 @@ export class DonutChartComponent implements OnDestroy {
   /** Formatter for the tooltip title. */
   readonly tooltipTitleFormatter = input<(data: any) => string | number>();
 
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Outputs
+  // ─────────────────────────────────────────────────────────────────────────────
+
   /** Event emitted when a donut segment is clicked. */
   readonly click = output<{ event: MouseEvent; values?: any }>();
 
-  // Template refs
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Template References
+  // ─────────────────────────────────────────────────────────────────────────────
+
   readonly chartContainer = viewChild<ElementRef<HTMLDivElement>>('chartContainer');
   readonly legendContainer = viewChild<ElementRef<HTMLDivElement>>('legendContainer');
   readonly tooltipWrapper = viewChild<ElementRef<HTMLDivElement>>('tooltipWrapper');
 
+  // ─────────────────────────────────────────────────────────────────────────────
   // State
-  readonly hoverValues = signal<any>(undefined);
+  // ─────────────────────────────────────────────────────────────────────────────
 
-  // Unovis instances
+  readonly hoverValues = signal<any>(undefined);
+  private structuralSignature: DonutStructuralSignature | null = null;
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Unovis Instances
+  // ─────────────────────────────────────────────────────────────────────────────
+
   private container: SingleContainer<number[]> | null = null;
-  private donut: Donut<number> | null = null;
+  private donutComponent: Donut<number> | null = null;
   private tooltip: Tooltip | null = null;
   private legend: BulletLegend | null = null;
 
-  // Injected services
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Injected Services
+  // ─────────────────────────────────────────────────────────────────────────────
+
   private readonly platformId = inject(PLATFORM_ID);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly destroyRef = inject(DestroyRef);
 
-  // Computed values
-  readonly isLegendTop = computed(() => this.legendPosition().startsWith('top'));
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Computed Values
+  // ─────────────────────────────────────────────────────────────────────────────
 
-  readonly legendAlignment = computed(() => {
-    const pos = this.legendPosition();
-    if (pos.includes('left')) return 'flex-start';
-    if (pos.includes('right')) return 'flex-end';
-    return 'center';
-  });
+  /** Whether legend should be positioned at top */
+  readonly legendOnTop = computed(() => isLegendAtTop(this.legendPosition()));
 
-  readonly categoriesArray = computed(() => Object.values(this.categories()));
+  /** CSS alignment for legend container */
+  readonly legendAlign = computed(() => getLegendAlignment(this.legendPosition()));
 
-  readonly legendItems = computed(() => {
-    return this.categoriesArray().map((item) => ({
-      ...item,
-      color: this.normalizeColor(item.color),
-    }));
-  });
+  /** Extracted colors from categories */
+  readonly colors = computed(() => extractDonutColors(this.categories()));
 
-  readonly angleRange = computed((): [number, number] | undefined => {
-    return this.type() === DonutType.Half
-      ? [-1.5707963267948966, 1.5707963267948966]
-      : undefined;
-  });
+  /** Normalized legend items */
+  readonly legendItems = computed(() => extractDonutLegendItems(this.categories()));
 
-  readonly colors = computed(() => {
-    return this.categoriesArray().map((item) => this.normalizeColor(item.color));
-  });
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Constructor
+  // ─────────────────────────────────────────────────────────────────────────────
 
   constructor() {
-    // Initialize chart after view is ready (browser only)
+    // Main chart synchronization effect
     effect(() => {
       const container = this.chartContainer();
       const data = this.data();
-      const categories = this.categories();
+      // Track all inputs that affect rendering
+      this.categories();
+      this.type();
+      this.radius();
+      this.arcWidth();
+      this.padAngle();
+      this.height();
+      this.hideTooltip();
 
       if (!isPlatformBrowser(this.platformId) || !container?.nativeElement) {
         return;
       }
 
-      if (!this.container) {
-        this.initializeChart(container.nativeElement, data);
-      } else {
-        this.updateChart(data);
-      }
+      this.syncChart(container.nativeElement, data);
     });
 
-    // Update legend when items change
+    // Legend synchronization effect
     effect(() => {
       const legendContainer = this.legendContainer();
       const items = this.legendItems();
@@ -179,75 +233,133 @@ export class DonutChartComponent implements OnDestroy {
         return;
       }
 
-      this.updateLegend(legendContainer.nativeElement, items);
+      this.syncLegend(legendContainer.nativeElement, items);
     });
 
     // Cleanup on destroy
     this.destroyRef.onDestroy(() => this.destroyChart());
   }
 
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Lifecycle
+  // ─────────────────────────────────────────────────────────────────────────────
+
   ngOnDestroy(): void {
     this.destroyChart();
   }
 
-  private initializeChart(element: HTMLElement, data: number[]): void {
-    const colors = this.colors();
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Event Handlers
+  // ─────────────────────────────────────────────────────────────────────────────
 
-    // Create donut component
-    this.donut = new Donut<number>({
-      value: (d: number) => d,
-      cornerRadius: this.radius(),
-      arcWidth: this.arcWidth(),
-      color: colors,
-      angleRange: this.angleRange(),
-      padAngle: this.padAngle(),
-    });
-
-    // Create tooltip
-    this.tooltip = new Tooltip({
-      horizontalShift: 20,
-      verticalShift: 20,
-      triggers: {
-        [Donut.selectors.segment]: (d: any) => this.getTooltipContent(d),
-      },
-    });
-
-    // Create container
-    this.container = new SingleContainer<number[]>(element, {
-      height: this.height(),
-      margin: {},
-      component: this.donut,
-      tooltip: this.tooltip,
-    }, data);
+  onClick(event: MouseEvent): void {
+    this.click.emit({ event, values: this.hoverValues() });
   }
 
-  private updateChart(data: number[]): void {
-    if (!this.container || !this.donut) return;
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Private Methods - Chart Synchronization
+  // ─────────────────────────────────────────────────────────────────────────────
 
-    const colors = this.colors();
+  /**
+   * Synchronizes the chart state with current inputs.
+   * Uses signature-based detection to determine if rebuild is needed.
+   */
+  private syncChart(element: HTMLElement, data: number[]): void {
+    const currentSignature = createDonutStructuralSignature(
+      this.type(),
+      this.hideTooltip(),
+      this.hideLegend()
+    );
 
-    // Update donut config
-    this.donut.setConfig({
-      value: (d: number) => d,
-      cornerRadius: this.radius(),
+    const needsRebuild = hasDonutSignatureChanged(
+      this.structuralSignature,
+      currentSignature
+    );
+
+    if (needsRebuild) {
+      this.rebuildChart(element, data);
+      this.structuralSignature = currentSignature;
+    } else {
+      this.updateChart(data);
+    }
+  }
+
+  /**
+   * Completely rebuilds the chart from scratch.
+   * Called when structural changes require new component instances.
+   */
+  private rebuildChart(element: HTMLElement, data: number[]): void {
+    this.destroyChart();
+
+    const donutConfig = buildDonutConfig<number>({
+      radius: this.radius(),
       arcWidth: this.arcWidth(),
-      color: colors,
-      angleRange: this.angleRange(),
+      colors: this.colors(),
+      type: this.type(),
       padAngle: this.padAngle(),
     });
 
-    // Update container
-    this.container.updateContainer({
+    this.donutComponent = new Donut<number>(donutConfig);
+
+    if (!this.hideTooltip()) {
+      this.tooltip = new Tooltip({
+        horizontalShift: 20,
+        verticalShift: 20,
+        triggers: {
+          [Donut.selectors.segment]: (d: any) => this.getTooltipContent(d),
+        },
+      });
+    }
+
+    const containerConfig = buildDonutContainerConfig<number[]>({
       height: this.height(),
-      margin: {},
-      component: this.donut,
+    });
+
+    this.container = new SingleContainer<number[]>(
+      element,
+      {
+        ...containerConfig,
+        component: this.donutComponent,
+        tooltip: this.tooltip ?? undefined,
+      },
+      data
+    );
+  }
+
+  /**
+   * Updates existing chart components with new configuration.
+   * Called when only non-structural properties change.
+   */
+  private updateChart(data: number[]): void {
+    if (!this.container || !this.donutComponent) return;
+
+    const donutConfig = buildDonutConfig<number>({
+      radius: this.radius(),
+      arcWidth: this.arcWidth(),
+      colors: this.colors(),
+      type: this.type(),
+      padAngle: this.padAngle(),
+    });
+
+    this.donutComponent.setConfig(donutConfig);
+
+    const containerConfig = buildDonutContainerConfig<number[]>({
+      height: this.height(),
+    });
+
+    this.container.updateContainer({
+      ...containerConfig,
+      component: this.donutComponent,
       tooltip: this.tooltip ?? undefined,
     });
 
     this.container.setData(data);
   }
 
-  private updateLegend(element: HTMLElement, items: BulletLegendItemInterface[]): void {
+  /**
+   * Synchronizes the legend with current items.
+   */
+  private syncLegend(element: HTMLElement, items: BulletLegendItemInterface[]): void {
     if (!this.legend) {
       this.legend = new BulletLegend(element, { items });
     } else {
@@ -255,15 +367,21 @@ export class DonutChartComponent implements OnDestroy {
     }
   }
 
+  /**
+   * Destroys all chart components and cleans up resources.
+   */
   private destroyChart(): void {
     this.container?.destroy();
     this.legend?.destroy();
     this.container = null;
-    this.donut = null;
+    this.donutComponent = null;
     this.tooltip = null;
     this.legend = null;
   }
 
+  /**
+   * Generates tooltip HTML content for a hovered segment.
+   */
   private getTooltipContent(d: any): string {
     const keyName = Object.values(this.categories())[d?.index]?.name;
     this.hoverValues.set({
@@ -272,14 +390,5 @@ export class DonutChartComponent implements OnDestroy {
     });
     this.cdr.detectChanges();
     return d ? this.tooltipWrapper()?.nativeElement.innerHTML ?? '' : '';
-  }
-
-  onClick(event: MouseEvent): void {
-    this.click.emit({ event, values: this.hoverValues() });
-  }
-
-  private normalizeColor(color: string | string[] | undefined, fallback = '#ccc'): string {
-    if (!color) return fallback;
-    return Array.isArray(color) ? color[0] || fallback : color;
   }
 }

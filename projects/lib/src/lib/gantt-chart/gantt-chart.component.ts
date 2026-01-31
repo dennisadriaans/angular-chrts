@@ -1,3 +1,14 @@
+/**
+ * Gantt Chart Component
+ *
+ * A configurable gantt/timeline chart component built on Unovis.
+ * Displays tasks, events, or activities on a timeline with categories.
+ *
+ * SOLID Principles Applied:
+ * - SRP: Component only orchestrates, delegates to pure functions
+ * - OCP: Extended via configuration, not modification
+ * - DIP: Depends on abstractions (config builders) not concrete implementations
+ */
 import {
   ChangeDetectionStrategy,
   ChangeDetectorRef,
@@ -16,16 +27,22 @@ import {
 } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { XYContainer, Timeline, Axis, Tooltip, BulletLegend, Position } from '@unovis/ts';
-import { LegendPosition, BulletLegendItemInterface } from '../types/index';
-import { TooltipComponent } from '../tooltip/index';
-import { isBrowser } from '../utils/index';
+import type { BulletLegendItemInterface } from '@unovis/ts';
 
-// Cached date formatter instance for better performance (SSR-safe)
-const getDateFormatter = () => {
-  if (!isBrowser()) return (date: number | Date) => String(date);
-  const formatter = new Intl.DateTimeFormat();
-  return (date: number | Date) => formatter.format(typeof date === 'number' ? date : date.getTime());
-};
+import { LegendPosition } from '../types/index';
+import { TooltipComponent } from '../tooltip/index';
+
+import type { GanttStructuralSignature } from './types';
+import { buildTimelineConfig, buildGanttXAxisConfig, buildGanttContainerConfig } from './config';
+import {
+  extractGanttColors,
+  extractGanttLegendItems,
+  createGanttTickFormatter,
+} from './utils';
+import {
+  createGanttStructuralSignature,
+  hasGanttSignatureChanged,
+} from './state';
 
 @Component({
   selector: 'ngx-gantt-chart',
@@ -35,7 +52,7 @@ const getDateFormatter = () => {
     <div
       class="ngx-gantt-chart-wrapper"
       [style.display]="'flex'"
-      [style.flexDirection]="isLegendTop() ? 'column-reverse' : 'column'"
+      [style.flexDirection]="legendOnTop() ? 'column-reverse' : 'column'"
       [style.gap]="'var(--vis-legend-spacing, 8px)'"
     >
       <!-- Chart container managed by unovis/ts -->
@@ -46,7 +63,7 @@ const getDateFormatter = () => {
           #legendContainer
           class="ngx-gantt-chart-legend"
           [style.display]="'flex'"
-          [style.justifyContent]="legendAlignment()"
+          [style.justifyContent]="legendAlign()"
         ></div>
       }
 
@@ -64,14 +81,18 @@ const getDateFormatter = () => {
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class GanttChartComponent<T extends Record<string, any>> implements OnDestroy {
+export class GanttChartComponent<T extends Record<string, unknown>> implements OnDestroy {
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Inputs
+  // ─────────────────────────────────────────────────────────────────────────────
+
   /** The data to be displayed in the gantt chart. */
   readonly data = input.required<T[]>();
 
   /** The height of the chart in pixels. */
   readonly height = input<number>();
 
-  /** Configuration for each category mapping to the items. Keyed by category property name. */
+  /** Configuration for each category mapping to the items. */
   readonly categories = input.required<Record<string, BulletLegendItemInterface>>();
 
   /** Function to retrieve the start value for a task. */
@@ -80,7 +101,7 @@ export class GanttChartComponent<T extends Record<string, any>> implements OnDes
   /** Function to retrieve the duration/length for a task. */
   readonly length = input.required<(d: T) => number>();
 
-  /** Function to retrieve the type/category of the timeline item (for coloring). */
+  /** Function to retrieve the type/category of the timeline item. */
   readonly type = input.required<(d: T) => string>();
 
   /** Width of the labels column on the left. Default is 220. */
@@ -128,6 +149,10 @@ export class GanttChartComponent<T extends Record<string, any>> implements OnDes
   /** Formatter for the tooltip title. */
   readonly tooltipTitleFormatter = input<(data: T) => string | number>();
 
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Outputs
+  // ─────────────────────────────────────────────────────────────────────────────
+
   /** Event emitted when a timeline item is clicked. */
   readonly clickEvent = output<{ event: MouseEvent; data: { index: number; item: T } }>();
 
@@ -137,71 +162,96 @@ export class GanttChartComponent<T extends Record<string, any>> implements OnDes
   /** Event emitted when a label is hovered. */
   readonly labelHover = output<T | undefined>();
 
-  // Template refs
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Template References
+  // ─────────────────────────────────────────────────────────────────────────────
+
   readonly chartContainer = viewChild<ElementRef<HTMLDivElement>>('chartContainer');
   readonly legendContainer = viewChild<ElementRef<HTMLDivElement>>('legendContainer');
   readonly tooltipWrapper = viewChild<ElementRef<HTMLDivElement>>('tooltipWrapper');
 
+  // ─────────────────────────────────────────────────────────────────────────────
   // State
-  readonly slotValue = signal<T | undefined>(undefined);
+  // ─────────────────────────────────────────────────────────────────────────────
 
-  // Unovis instances
+  readonly slotValue = signal<T | undefined>(undefined);
+  private structuralSignature: GanttStructuralSignature | null = null;
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Unovis Instances
+  // ─────────────────────────────────────────────────────────────────────────────
+
   private container: XYContainer<T> | null = null;
   private timeline: Timeline<T> | null = null;
   private xAxisComponent: Axis<T> | null = null;
   private tooltip: Tooltip | null = null;
   private legend: BulletLegend | null = null;
 
-  // Injected services
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Injected Services
+  // ─────────────────────────────────────────────────────────────────────────────
+
   private readonly platformId = inject(PLATFORM_ID);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly destroyRef = inject(DestroyRef);
 
-  // Computed values
-  readonly isLegendTop = computed(() => this.legendPosition().startsWith('top'));
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Computed Values
+  // ─────────────────────────────────────────────────────────────────────────────
 
-  readonly legendAlignment = computed(() => {
+  /** Whether legend should be positioned at top */
+  readonly legendOnTop = computed(() => this.legendPosition().startsWith('top'));
+
+  /** CSS alignment for legend container */
+  readonly legendAlign = computed(() => {
     const pos = this.legendPosition();
     if (pos.includes('left')) return 'flex-start';
     if (pos.includes('right')) return 'flex-end';
     return 'center';
   });
 
-  readonly legendItems = computed(() => {
-    return Object.values(this.categories()).map((item) => ({
-      ...item,
-      color: Array.isArray(item.color) ? item.color[0] : item.color,
-    }));
-  });
+  /** Extracted colors from categories */
+  readonly colors = computed(() => extractGanttColors(this.categories()));
 
-  readonly colors = computed(() => {
-    const cats = this.categories();
-    const defaultColors = Object.values(cats).map((_, index) => `var(--vis-color${index})`);
-    return Object.values(cats).map((c, i) => {
-      const color = c.color ?? defaultColors[i];
-      return Array.isArray(color) ? color[0] : color;
-    });
-  });
+  /** Normalized legend items */
+  readonly legendItems = computed(() => extractGanttLegendItems(this.categories()));
+
+  /** Tick format function with date formatter fallback */
+  readonly tickFormatFn = computed(() => createGanttTickFormatter(this.xTickFormat()));
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Constructor
+  // ─────────────────────────────────────────────────────────────────────────────
 
   constructor() {
-    // Initialize chart after view is ready (browser only)
+    // Main chart synchronization effect
     effect(() => {
       const container = this.chartContainer();
       const data = this.data();
-      const categories = this.categories();
+      // Track all inputs that affect rendering
+      this.categories();
+      this.x();
+      this.length();
+      this.type();
+      this.lineWidth();
+      this.rowHeight();
+      this.labelWidth();
+      this.showLabels();
+      this.height();
+      this.hideTooltip();
+      this.xNumTicks();
+      this.xTickLine();
+      this.xGridLine();
+      this.xDomainLine();
 
       if (!isPlatformBrowser(this.platformId) || !container?.nativeElement) {
         return;
       }
 
-      if (!this.container) {
-        this.initializeChart(container.nativeElement, data);
-      } else {
-        this.updateChart(data);
-      }
+      this.syncChart(container.nativeElement, data);
     });
 
-    // Update legend when items change
+    // Legend synchronization effect
     effect(() => {
       const legendContainer = this.legendContainer();
       const items = this.legendItems();
@@ -211,44 +261,86 @@ export class GanttChartComponent<T extends Record<string, any>> implements OnDes
         return;
       }
 
-      this.updateLegend(legendContainer.nativeElement, items);
+      this.syncLegend(legendContainer.nativeElement, items);
     });
 
     // Cleanup on destroy
     this.destroyRef.onDestroy(() => this.destroyChart());
   }
 
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Lifecycle
+  // ─────────────────────────────────────────────────────────────────────────────
+
   ngOnDestroy(): void {
     this.destroyChart();
   }
 
-  private initializeChart(element: HTMLElement, data: T[]): void {
-    const colors = this.colors();
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Event Handlers
+  // ─────────────────────────────────────────────────────────────────────────────
 
-    // Create timeline component
-    this.timeline = new Timeline<T>({
+  onScroll(event: WheelEvent): void {
+    this.scrollEvent.emit(event.deltaY);
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Private Methods - Chart Synchronization
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Synchronizes the chart state with current inputs.
+   */
+  private syncChart(element: HTMLElement, data: T[]): void {
+    const currentSignature = createGanttStructuralSignature(
+      this.categories(),
+      this.hideTooltip(),
+      this.hideLegend()
+    );
+
+    const needsRebuild = hasGanttSignatureChanged(
+      this.structuralSignature,
+      currentSignature
+    );
+
+    if (needsRebuild) {
+      this.rebuildChart(element, data);
+      this.structuralSignature = currentSignature;
+    } else {
+      this.updateChart(data);
+    }
+  }
+
+  /**
+   * Completely rebuilds the chart from scratch.
+   */
+  private rebuildChart(element: HTMLElement, data: T[]): void {
+    this.destroyChart();
+
+    const timelineConfig = buildTimelineConfig<T>({
       x: this.x(),
       length: this.length(),
+      type: this.type(),
+      colors: this.colors(),
       lineWidth: this.lineWidth(),
       rowHeight: this.rowHeight(),
-      type: this.type(),
-      color: colors,
       labelWidth: this.labelWidth(),
       showLabels: this.showLabels(),
     });
 
-    // Create axis
-    this.xAxisComponent = new Axis<T>({
-      type: 'x',
-      position: Position.Bottom,
-      tickFormat: this.tickFormatFn,
+    this.timeline = new Timeline<T>(timelineConfig);
+
+    const axisConfig = buildGanttXAxisConfig<T>({
+      tickFormat: this.tickFormatFn(),
       numTicks: this.xNumTicks(),
       tickLine: this.xTickLine(),
       gridLine: this.xGridLine(),
       domainLine: this.xDomainLine(),
+      position: Position.Bottom,
     });
 
-    // Create tooltip
+    this.xAxisComponent = new Axis<T>(axisConfig);
+
     if (!this.hideTooltip()) {
       this.tooltip = new Tooltip({
         triggers: {
@@ -257,55 +349,60 @@ export class GanttChartComponent<T extends Record<string, any>> implements OnDes
       });
     }
 
-    // Collect drawable components (axis is managed by XYContainer)
-    const components = [this.timeline];
+    const containerConfig = buildGanttContainerConfig<T>({
+      height: this.height(),
+    });
 
-    // Create container
     this.container = new XYContainer<T>(
       element,
       {
-        height: this.height(),
-        components,
+        ...containerConfig,
+        components: [this.timeline],
         xAxis: this.xAxisComponent,
         tooltip: this.tooltip ?? undefined,
       },
-      data,
+      data
     );
   }
 
+  /**
+   * Updates existing chart components with new configuration.
+   */
   private updateChart(data: T[]): void {
     if (!this.container || !this.timeline) return;
 
-    const colors = this.colors();
-
-    // Update timeline config
-    this.timeline.setConfig({
+    const timelineConfig = buildTimelineConfig<T>({
       x: this.x(),
       length: this.length(),
+      type: this.type(),
+      colors: this.colors(),
       lineWidth: this.lineWidth(),
       rowHeight: this.rowHeight(),
-      type: this.type(),
-      color: colors,
       labelWidth: this.labelWidth(),
       showLabels: this.showLabels(),
     });
 
-    // Update axis
+    this.timeline.setConfig(timelineConfig);
+
     if (this.xAxisComponent) {
-      this.xAxisComponent.setConfig({
-        type: 'x',
-        position: Position.Bottom,
-        tickFormat: this.tickFormatFn,
+      const axisConfig = buildGanttXAxisConfig<T>({
+        tickFormat: this.tickFormatFn(),
         numTicks: this.xNumTicks(),
         tickLine: this.xTickLine(),
         gridLine: this.xGridLine(),
         domainLine: this.xDomainLine(),
+        position: Position.Bottom,
       });
+
+      this.xAxisComponent.setConfig(axisConfig);
     }
 
-    // Update container (Unovis expects a full config; otherwise DOM children are cleared)
-    this.container.updateContainer({
+    const containerConfig = buildGanttContainerConfig<T>({
       height: this.height(),
+    });
+
+    this.container.updateContainer({
+      ...containerConfig,
       components: this.timeline ? [this.timeline] : [],
       xAxis: this.xAxisComponent ?? undefined,
       tooltip: this.tooltip ?? undefined,
@@ -314,7 +411,10 @@ export class GanttChartComponent<T extends Record<string, any>> implements OnDes
     this.container.setData(data);
   }
 
-  private updateLegend(element: HTMLElement, items: BulletLegendItemInterface[]): void {
+  /**
+   * Synchronizes the legend with current items.
+   */
+  private syncLegend(element: HTMLElement, items: BulletLegendItemInterface[]): void {
     if (!this.legend) {
       this.legend = new BulletLegend(element, { items });
     } else {
@@ -322,6 +422,9 @@ export class GanttChartComponent<T extends Record<string, any>> implements OnDes
     }
   }
 
+  /**
+   * Destroys all chart components and cleans up resources.
+   */
   private destroyChart(): void {
     this.container?.destroy();
     this.legend?.destroy();
@@ -332,20 +435,13 @@ export class GanttChartComponent<T extends Record<string, any>> implements OnDes
     this.legend = null;
   }
 
+  /**
+   * Generates tooltip HTML content for a hovered item.
+   */
   private getTooltipContent(d: T): string {
     this.slotValue.set(d);
     this.labelHover.emit(d);
     this.cdr.detectChanges();
     return d ? this.tooltipWrapper()?.nativeElement.innerHTML ?? '' : '';
-  }
-
-  private tickFormatFn = (tick: number | Date, i: number, ticks: (number | Date)[]): string => {
-    const formatter = this.xTickFormat();
-    if (formatter) return formatter(tick, i, ticks);
-    return getDateFormatter()(tick);
-  };
-
-  onScroll(event: WheelEvent): void {
-    this.scrollEvent.emit(event.deltaY);
   }
 }

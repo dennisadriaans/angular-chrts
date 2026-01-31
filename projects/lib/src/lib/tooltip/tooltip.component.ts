@@ -1,8 +1,27 @@
+/**
+ * Tooltip Component
+ *
+ * A configurable tooltip component for displaying chart hover data.
+ * Uses CSS custom properties for theming.
+ *
+ * SOLID Principles Applied:
+ * - SRP: Component focuses on rendering, utilities handle data processing
+ * - OCP: Extended via CSS custom properties, not modification
+ */
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { BulletLegendItemInterface } from '../types/legend';
-import { AxisFormatter as axisFormatter } from '../types/axis';
+import type { BulletLegendItemInterface } from '@unovis/ts';
+import type { AxisFormatter } from '../types/axis';
 import { getFirstPropertyValue } from '../utils/index';
+
+import {
+  extractVisibleEntries,
+  getCategoryColor,
+  createTooltipStyles,
+  createDotStyle,
+} from './utils';
+
+/** Pre-computed styles for better performance */
+const STYLES = createTooltipStyles();
 
 @Component({
   selector: 'ngx-tooltip',
@@ -22,106 +41,80 @@ import { getFirstPropertyValue } from '../utils/index';
             {{ categories()[entry.key].name }}
           </span>
           <span [style]="valueStyle">
-            {{ yFormatter() ? yFormatter()!(entry.value, i, []) : entry.value }}
+            {{ formatValue(entry.value, i) }}
           </span>
         }
       </div>
     </div>
   `,
-  styles: [`
-    :host {
-      display: block;
-    }
-  `],
+  styles: [
+    `
+      :host {
+        display: block;
+      }
+    `,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class TooltipComponent<T extends Record<string, any>> {
+export class TooltipComponent<T extends Record<string, unknown>> {
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Inputs
+  // ─────────────────────────────────────────────────────────────────────────────
+
   /** The data object representing current hover state. */
   readonly data = input.required<T>();
-  
+
   /** Legend configuration mapping keys to labels. */
   readonly categories = input.required<Record<string, BulletLegendItemInterface>>();
-  
+
   /** Optional formatter for the tooltip title. */
   readonly titleFormatter = input<(data: T) => string | number>();
-  
+
   /** Optional formatter for the values. */
-  readonly yFormatter = input<axisFormatter>();
+  readonly yFormatter = input<AxisFormatter>();
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Computed Values
+  // ─────────────────────────────────────────────────────────────────────────────
 
   readonly titleFormat = computed(() => {
     const data = this.data();
     const formatter = this.titleFormatter();
     if (formatter) return formatter(data);
-    
     return getFirstPropertyValue(data);
   });
 
-  private readonly keyBlockList = ['_index', '_stacked', '_ending'];
+  readonly visibleEntries = computed(() =>
+    extractVisibleEntries(this.data(), this.categories())
+  );
 
-  readonly visibleEntries = computed(() => {
-    const data = this.data();
-    const categories = this.categories();
-    return Object.entries(data ?? {})
-      .filter(([key]) => !this.keyBlockList.includes(key) && Object.keys(categories).includes(key))
-      .map(([key, value]) => ({ key, value }));
-  });
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Styles (static, pre-computed)
+  // ─────────────────────────────────────────────────────────────────────────────
 
-  readonly containerStyle = {
-    display: 'flex',
-    flexDirection: 'column',
-    padding: '0px',
-    margin: '0px'
-  };
+  readonly containerStyle = STYLES.container;
+  readonly titleStyle = STYLES.title;
+  readonly contentStyle = STYLES.content;
+  readonly labelStyle = STYLES.label;
+  readonly valueStyle = STYLES.value;
 
-  readonly titleStyle = {
-    color: 'var(--vis-tooltip-title-color, #000)',
-    textTransform: 'var(--vis-tooltip-title-text-transform, capitalize)',
-    borderBottom: 'var(--vis-tooltip-title-border-bottom, 1px solid #e5e7eb)',
-    padding: 'var(--vis-tooltip-title-padding, 0.75rem 0.75rem 0.5rem 0.75rem)',
-    margin: 'var(--vis-tooltip-title-margin, 0 0 0.25rem 0)',
-    fontSize: 'var(--vis-tooltip-title-font-size, 0.875rem)',
-    lineHeight: 'var(--vis-tooltip-title-line-height, 100%)',
-    fontWeight: 'var(--vis-tooltip-title-font-weight, 600)',
-  };
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Methods
+  // ─────────────────────────────────────────────────────────────────────────────
 
-  readonly contentStyle = {
-    display: 'grid',
-    gridTemplateColumns: 'auto 1fr auto',
-    alignItems: 'center',
-    gap: 'var(--vis-tooltip-content-gap, 0.25rem 0.5rem)',
-    padding: 'var(--vis-tooltip-content-padding, 0 0.75rem 0.5rem 0.75rem)',
-  };
+  getDotStyle(key: string, index: number): Record<string, string> {
+    const color = getCategoryColor(this.categories()[key], index);
+    return createDotStyle(color);
+  }
 
-  readonly labelStyle = {
-    fontWeight: 'var(--vis-tooltip-label-font-weight, 400)',
-    fontSize: 'var(--vis-tooltip-label-font-size, 0.875rem)',
-    color: 'var(--vis-tooltip-label-color, inherit)',
-    margin: 'var(--vis-tooltip-label-margin, 0 1rem 0 0)',
-    whiteSpace: 'nowrap',
-  };
-
-  readonly valueStyle = {
-    fontSize: 'var(--vis-tooltip-value-font-size, 0.875rem)',
-    fontWeight: 'var(--vis-tooltip-value-font-weight, 600)',
-    color: 'var(--vis-tooltip-value-color, inherit)',
-    textAlign: 'right',
-    fontVariantNumeric: 'tabular-nums',
-  };
-
-  getDotStyle(key: string, index: number) {
-    const category = this.categories()[key];
-    const color = (category && typeof category.color === 'string') 
-      ? category.color 
-      : `var(--vis-color${index})`;
-    
-    return {
-      width: '8px',
-      height: '8px',
-      aspectRatio: '1',
-      borderRadius: 'var(--vis-tooltip-dot-border-radius, 4px)',
-      margin: 'var(--vis-tooltip-dot-margin, 0)',
-      flexShrink: '0',
-      backgroundColor: color,
-    };
+  /**
+   * Formats a value using the yFormatter if available.
+   */
+  formatValue(value: unknown, index: number): string | unknown {
+    const formatter = this.yFormatter();
+    if (formatter && (typeof value === 'number' || value instanceof Date)) {
+      return formatter(value, index, []);
+    }
+    return value;
   }
 }
