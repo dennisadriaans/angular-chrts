@@ -3,23 +3,27 @@ import {
   ChangeDetectorRef,
   Component,
   computed,
+  DestroyRef,
+  effect,
   ElementRef,
   inject,
   input,
+  OnDestroy,
   output,
+  PLATFORM_ID,
   signal,
   viewChild,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { isPlatformBrowser } from '@angular/common';
 import {
-  VisXYContainerModule,
-  VisAxisModule,
-  VisTooltipModule,
-  VisBulletLegendModule,
-  VisGroupedBarModule,
-  VisStackedBarModule,
-} from '@unovis/angular';
-import { GroupedBar, Orientation, StackedBar } from '@unovis/ts';
+  XYContainer,
+  GroupedBar,
+  StackedBar,
+  Axis,
+  Tooltip,
+  BulletLegend,
+  Orientation,
+} from '@unovis/ts';
 import { LegendPosition, BulletLegendItemInterface, AxisConfig } from '../types/index';
 import { TooltipComponent } from '../tooltip/tooltip.component';
 import { ValueLabel } from './types';
@@ -27,93 +31,28 @@ import { ValueLabel } from './types';
 @Component({
   selector: 'ngx-bar-chart',
   standalone: true,
-  imports: [
-    CommonModule,
-    VisXYContainerModule,
-    VisAxisModule,
-    VisTooltipModule,
-    VisBulletLegendModule,
-    VisGroupedBarModule,
-    VisStackedBarModule,
-    TooltipComponent,
-  ],
+  imports: [TooltipComponent],
   template: `
     <div
+      class="ngx-bar-chart-wrapper"
       [style.display]="'flex'"
       [style.flexDirection]="isLegendTop() ? 'column-reverse' : 'column'"
-      [style.gap]="'var(--vis-legend-spacing)'"
+      [style.gap]="'var(--vis-legend-spacing, 8px)'"
       (click)="onClick($event)"
     >
-      <vis-xy-container
-        [data]="data()"
-        [height]="height()"
-        [padding]="padding()"
-      >
-        <vis-tooltip
-          [triggers]="tooltipTriggers"
-        ></vis-tooltip>
-
-        @if (!stacked()) {
-          <vis-grouped-bar
-            [data]="data()"
-            [x]="_x"
-            [y]="yAccessors()"
-            [color]="colorAccessor"
-            [roundedCorners]="radius() ?? 0"
-            [groupPadding]="groupPadding()"
-            [barPadding]="barPadding()"
-            [orientation]="orientation()"
-          ></vis-grouped-bar>
-        } @else {
-          <vis-stacked-bar
-            [data]="data()"
-            [x]="_x"
-            [y]="yAccessors()"
-            [color]="colorAccessor"
-            [roundedCorners]="radius() ?? 0"
-            [barPadding]="barPadding()"
-            [orientation]="orientation()"
-          ></vis-stacked-bar>
-        }
-
-        @if (!hideXAxis()) {
-          <vis-axis
-            type="x"
-            [label]="xLabel()"
-            [tickFormat]="xFormatterFn"
-            [gridLine]="xGridLine()"
-            [domainLine]="!!xDomainLine()"
-            [tickLine]="xTickLine()"
-            [numTicks]="xNumTicks()"
-            [tickValues]="xExplicitTicksValues()"
-            [minMaxTicksOnly]="minMaxTicksOnly()"
-          ></vis-axis>
-        }
-
-        @if (!hideYAxis()) {
-          <vis-axis
-            type="y"
-            [label]="yLabel()"
-            [tickFormat]="yFormatterFn"
-            [gridLine]="orientation() !== Orientation.Horizontal && yGridLine()"
-            [domainLine]="!!yDomainLine()"
-            [numTicks]="yNumTicks()"
-            [tickLine]="yTickLine()"
-          ></vis-axis>
-        }
-      </vis-xy-container>
+      <!-- Chart container managed by unovis/ts -->
+      <div #chartContainer class="ngx-bar-chart-container"></div>
 
       @if (!hideLegend()) {
         <div
+          #legendContainer
+          class="ngx-bar-chart-legend"
           [style.display]="'flex'"
           [style.justifyContent]="legendAlignment()"
-        >
-          <vis-bullet-legend
-            [items]="legendItems()"
-          ></vis-bullet-legend>
-        </div>
+        ></div>
       }
 
+      <!-- Hidden tooltip template -->
       <div #tooltipWrapper style="display: none">
         @if (hoverValues()) {
           <ngx-tooltip
@@ -128,13 +67,13 @@ import { ValueLabel } from './types';
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class BarChartComponent<T extends Record<string, any>> {
+export class BarChartComponent<T extends Record<string, any>> implements OnDestroy {
   /** The data to be displayed in the bar chart. */
   readonly data = input.required<T[]>();
-  
+
   /** The height of the chart in pixels. Default is 400. */
   readonly height = input<number>(400);
-  
+
   /** Padding around the chart area. */
   readonly padding = input<{ top: number; right: number; bottom: number; left: number }>({
     top: 5,
@@ -142,108 +81,129 @@ export class BarChartComponent<T extends Record<string, any>> {
     bottom: 5,
     left: 5,
   });
-  
+
   /** Configuration for each category mapping to the axes. Keyed by category property name. */
   readonly categories = input.required<Record<string, BulletLegendItemInterface>>();
-  
+
   /** The data keys to use for the Y-axis (or X-axis if horizontal). */
   readonly yAxis = input.required<(keyof T)[]>();
-  
+
   /** Whether to stack the bars on top of each other. */
   readonly stacked = input<boolean>(false);
-  
+
   /** The orientation of the bars (Vertical or Horizontal). */
   readonly orientation = input<Orientation>(Orientation.Vertical);
-  
+
   /** Corner radius for the bars. */
   readonly radius = input<number>();
-  
+
   /** Padding between bar groups. Value between 0 and 1. */
   readonly groupPadding = input<number>(0);
-  
+
   /** Padding between individual bars. Value between 0 and 1. */
   readonly barPadding = input<number>(0.2);
+
   /** Label for the X axis. */
   readonly xLabel = input<string>();
-  
+
   /** Label for the Y axis. */
   readonly yLabel = input<string>();
-  
+
   /** Formatter function for X axis tick labels. */
   readonly xFormatter = input<(tick: number | Date, i?: number, ticks?: (number | Date)[]) => string>();
-  
+
   /** Formatter function for Y axis tick labels. */
   readonly yFormatter = input<(tick: number | Date, i?: number, ticks?: (number | Date)[]) => string>();
-  
+
   /** Formatter for the tooltip title. */
   readonly tooltipTitleFormatter = input<(data: T) => string | number>();
-  
+
   /** Number of ticks to show on the X axis. */
   readonly xNumTicks = input<number>();
-  
+
   /** Specific values to show on the X axis. */
   readonly xExplicitTicks = input<Array<number | string | Date>>();
-  readonly xExplicitTicksValues = computed(() => this.xExplicitTicks() as any);
-  
+  readonly xExplicitTicksValues = computed(() => this.xExplicitTicks() as number[] | undefined);
+
   /** If true, only shows the first and last tick labels on the X axis. */
   readonly minMaxTicksOnly = input<boolean>(false);
-  
+
   /** Number of ticks to show on the Y axis. */
   readonly yNumTicks = input<number>();
-  
+
   /** Whether to hide the X axis entirely. */
   readonly hideXAxis = input<boolean>(false);
-  
+
   /** Whether to hide the Y axis entirely. */
   readonly hideYAxis = input<boolean>(false);
-  
+
   /** Whether to show grid lines for the X axis. */
   readonly xGridLine = input<boolean>(false);
-  
+
   /** Whether to show grid lines for the Y axis. */
   readonly yGridLine = input<boolean>(true);
-  
+
   /** Whether to show the domain line for the X axis. */
   readonly xDomainLine = input<boolean>(false);
-  
+
   /** Whether to show the domain line for the Y axis. */
   readonly yDomainLine = input<boolean>(false);
-  
+
   /** Whether to show tick lines for the X axis. */
   readonly xTickLine = input<boolean>(false);
-  
+
   /** Whether to show tick lines for the Y axis. */
   readonly yTickLine = input<boolean>(false);
-  
+
   /** Whether to hide the tooltip. */
   readonly hideTooltip = input<boolean>(false);
-  
+
   /** Whether to hide the legend. */
   readonly hideLegend = input<boolean>(false);
-  
+
   /** Position of the legend relative to the chart. */
   readonly legendPosition = input<LegendPosition>(LegendPosition.BottomCenter);
-  
+
   /** Custom styles for the legend. */
   readonly legendStyle = input<Record<string, string>>();
-  
+
   /** Configuration for value labels on bars. */
   readonly valueLabel = input<ValueLabel>();
-  
+
   /** Advanced configuration for the X axis. */
   readonly xAxisConfig = input<AxisConfig>();
-  
+
   /** Advanced configuration for the Y axis. */
   readonly yAxisConfig = input<AxisConfig>();
 
   /** Event emitted when a bar is clicked. */
   readonly click = output<{ event: MouseEvent; values?: T }>();
 
+  // Template refs
+  readonly chartContainer = viewChild<ElementRef<HTMLDivElement>>('chartContainer');
+  readonly legendContainer = viewChild<ElementRef<HTMLDivElement>>('legendContainer');
   readonly tooltipWrapper = viewChild<ElementRef<HTMLDivElement>>('tooltipWrapper');
+
+  // State
   readonly hoverValues = signal<T | undefined>(undefined);
 
+  // Expose Orientation for template
   readonly Orientation = Orientation;
 
+  // Unovis instances
+  private container: XYContainer<T> | null = null;
+  private barComponent: GroupedBar<T> | StackedBar<T> | null = null;
+  private xAxisComponent: Axis<T> | null = null;
+  private yAxisComponent: Axis<T> | null = null;
+  private tooltip: Tooltip | null = null;
+  private legend: BulletLegend | null = null;
+
+  // Injected services
+  private readonly platformId = inject(PLATFORM_ID);
+  private readonly cdr = inject(ChangeDetectorRef);
+  private readonly destroyRef = inject(DestroyRef);
+
+  // Computed values
   readonly isLegendTop = computed(() => this.legendPosition().startsWith('top'));
 
   readonly legendAlignment = computed(() => {
@@ -264,42 +224,237 @@ export class BarChartComponent<T extends Record<string, any>> {
     return this.yAxis().map((key) => (d: T) => d[key]);
   });
 
-  colorAccessor: any = (_: T, i: number) => {
-    const cats = Object.values(this.categories());
-    return cats[i]?.color;
-  };
+  readonly colors = computed(() => {
+    const cats = this.categories();
+    return Object.values(cats).map((item, index) => {
+      const color = item.color;
+      if (Array.isArray(color)) return color[0] ?? `var(--vis-color${index})`;
+      return color ?? `var(--vis-color${index})`;
+    });
+  });
 
-  _x: any = (_: T, i: number) => i;
+  constructor() {
+    // Initialize chart after view is ready (browser only)
+    effect(() => {
+      const container = this.chartContainer();
+      const data = this.data();
+      const categories = this.categories();
 
-  xFormatterFn = (tick: number | Date, i: number, ticks: (number | Date)[]) => {
+      if (!isPlatformBrowser(this.platformId) || !container?.nativeElement) {
+        return;
+      }
+
+      if (!this.container) {
+        this.initializeChart(container.nativeElement, data);
+      } else {
+        this.updateChart(data);
+      }
+    });
+
+    // Update legend when items change
+    effect(() => {
+      const legendContainer = this.legendContainer();
+      const items = this.legendItems();
+      const hideLegend = this.hideLegend();
+
+      if (!isPlatformBrowser(this.platformId) || hideLegend || !legendContainer?.nativeElement) {
+        return;
+      }
+
+      this.updateLegend(legendContainer.nativeElement, items);
+    });
+
+    // Cleanup on destroy
+    this.destroyRef.onDestroy(() => this.destroyChart());
+  }
+
+  ngOnDestroy(): void {
+    this.destroyChart();
+  }
+
+  private initializeChart(element: HTMLElement, data: T[]): void {
+    const stacked = this.stacked();
+    const yAccessors = this.yAccessors();
+    const colors = this.colors();
+    const orientation = this.orientation();
+
+    // Create bar component (grouped or stacked)
+    if (stacked) {
+      this.barComponent = new StackedBar<T>({
+        x: (_: T, i: number) => i,
+        y: yAccessors,
+        color: colors,
+        roundedCorners: this.radius() ?? 0,
+        barPadding: this.barPadding(),
+        orientation,
+      });
+    } else {
+      this.barComponent = new GroupedBar<T>({
+        x: (_: T, i: number) => i,
+        y: yAccessors,
+        color: colors,
+        roundedCorners: this.radius() ?? 0,
+        groupPadding: this.groupPadding(),
+        barPadding: this.barPadding(),
+        orientation,
+      });
+    }
+
+    // Create axes
+    if (!this.hideXAxis()) {
+      this.xAxisComponent = new Axis<T>({
+        type: 'x',
+        label: this.xLabel(),
+        tickFormat: this.xFormatterFn,
+        gridLine: this.xGridLine(),
+        domainLine: !!this.xDomainLine(),
+        tickLine: this.xTickLine(),
+        numTicks: this.xNumTicks(),
+        tickValues: this.xExplicitTicksValues(),
+        minMaxTicksOnly: this.minMaxTicksOnly(),
+      });
+    }
+
+    if (!this.hideYAxis()) {
+      this.yAxisComponent = new Axis<T>({
+        type: 'y',
+        label: this.yLabel(),
+        tickFormat: this.yFormatterFn,
+        gridLine: orientation !== Orientation.Horizontal && this.yGridLine(),
+        domainLine: !!this.yDomainLine(),
+        numTicks: this.yNumTicks(),
+        tickLine: this.yTickLine(),
+      });
+    }
+
+    // Create tooltip with triggers
+    if (!this.hideTooltip()) {
+      this.tooltip = new Tooltip({
+        triggers: {
+          [GroupedBar.selectors.bar]: (d: T) => this.getTooltipContent(d),
+          [StackedBar.selectors.bar]: (d: T) => this.getTooltipContent(d),
+        },
+      });
+    }
+
+    // Collect all components
+    const components = [
+      this.barComponent,
+      ...(this.xAxisComponent ? [this.xAxisComponent] : []),
+      ...(this.yAxisComponent ? [this.yAxisComponent] : []),
+    ];
+
+    // Create container
+    this.container = new XYContainer<T>(element, {
+      height: this.height(),
+      padding: this.padding(),
+      components,
+      tooltip: this.tooltip ?? undefined,
+    }, data);
+  }
+
+  private updateChart(data: T[]): void {
+    if (!this.container) return;
+
+    const stacked = this.stacked();
+    const yAccessors = this.yAccessors();
+    const colors = this.colors();
+    const orientation = this.orientation();
+
+    // Update bar component
+    if (stacked && this.barComponent instanceof StackedBar) {
+      this.barComponent.setConfig({
+        x: (_: T, i: number) => i,
+        y: yAccessors,
+        color: colors,
+        roundedCorners: this.radius() ?? 0,
+        barPadding: this.barPadding(),
+        orientation,
+      });
+    } else if (!stacked && this.barComponent instanceof GroupedBar) {
+      this.barComponent.setConfig({
+        x: (_: T, i: number) => i,
+        y: yAccessors,
+        color: colors,
+        roundedCorners: this.radius() ?? 0,
+        groupPadding: this.groupPadding(),
+        barPadding: this.barPadding(),
+        orientation,
+      });
+    }
+
+    // Update axes
+    if (this.xAxisComponent) {
+      this.xAxisComponent.setConfig({
+        type: 'x',
+        label: this.xLabel(),
+        tickFormat: this.xFormatterFn,
+        gridLine: this.xGridLine(),
+        domainLine: !!this.xDomainLine(),
+        tickLine: this.xTickLine(),
+        numTicks: this.xNumTicks(),
+        tickValues: this.xExplicitTicksValues(),
+        minMaxTicksOnly: this.minMaxTicksOnly(),
+      });
+    }
+
+    if (this.yAxisComponent) {
+      this.yAxisComponent.setConfig({
+        type: 'y',
+        label: this.yLabel(),
+        tickFormat: this.yFormatterFn,
+        gridLine: orientation !== Orientation.Horizontal && this.yGridLine(),
+        domainLine: !!this.yDomainLine(),
+        numTicks: this.yNumTicks(),
+        tickLine: this.yTickLine(),
+      });
+    }
+
+    // Update container
+    this.container.updateContainer({
+      height: this.height(),
+      padding: this.padding(),
+    });
+
+    this.container.setData(data);
+  }
+
+  private updateLegend(element: HTMLElement, items: BulletLegendItemInterface[]): void {
+    if (!this.legend) {
+      this.legend = new BulletLegend(element, { items });
+    } else {
+      this.legend.update({ items });
+    }
+  }
+
+  private destroyChart(): void {
+    this.container?.destroy();
+    this.legend?.destroy();
+    this.container = null;
+    this.legend = null;
+    this.barComponent = null;
+    this.xAxisComponent = null;
+    this.yAxisComponent = null;
+    this.tooltip = null;
+  }
+
+  private getTooltipContent(d: T): string {
+    this.hoverValues.set(d);
+    this.cdr.detectChanges();
+    return d ? this.tooltipWrapper()?.nativeElement.innerHTML ?? '' : '';
+  }
+
+  private xFormatterFn = (tick: number | Date, i: number, ticks: (number | Date)[]): string => {
     const formatter = this.xFormatter();
     return formatter ? formatter(tick, i, ticks) : String(tick);
   };
 
-  yFormatterFn = (tick: number | Date, i: number, ticks: (number | Date)[]) => {
+  private yFormatterFn = (tick: number | Date, i: number, ticks: (number | Date)[]): string => {
     const formatter = this.yFormatter();
     return formatter ? formatter(tick, i, ticks) : String(tick);
   };
 
-  tooltipTriggers: Record<string, (d: T) => string> = {
-    [GroupedBar.selectors.bar]: (d: T) => {
-      this.onCrosshairUpdate(d);
-      return d ? this.tooltipWrapper()?.nativeElement.innerHTML ?? '' : '';
-    },
-    [StackedBar.selectors.bar]: (d: T) => {
-      this.onCrosshairUpdate(d);
-      return d ? this.tooltipWrapper()?.nativeElement.innerHTML ?? '' : '';
-    },
-  };
-
-  onCrosshairUpdate(d: T): void {
-    this.hoverValues.set(d);
-    this.cdr.detectChanges();
-  }
-
   onClick(event: MouseEvent): void {
     this.click.emit({ event, values: this.hoverValues() });
   }
-
-  private cdr = inject(ChangeDetectorRef);
 }

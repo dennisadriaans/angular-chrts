@@ -3,28 +3,30 @@ import {
   ChangeDetectorRef,
   Component,
   computed,
+  DestroyRef,
+  effect,
   ElementRef,
   inject,
   input,
+  OnDestroy,
   output,
+  PLATFORM_ID,
   signal,
   viewChild,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { isPlatformBrowser } from '@angular/common';
 import {
-  VisXYContainerModule,
-  VisAreaModule,
-  VisAxisModule,
-  VisLineModule,
-  VisTooltipModule,
-  VisCrosshairModule,
-  VisBulletLegendModule,
-} from '@unovis/angular';
-import { CurveType, Position } from '@unovis/ts';
-import {
-  BulletLegendItemInterface,
-} from '../types/legend';
-import { LegendPosition } from '../types/legend';
+  XYContainer,
+  Area,
+  Line,
+  Axis,
+  Crosshair,
+  Tooltip,
+  BulletLegend,
+  CurveType,
+  Position,
+} from '@unovis/ts';
+import { BulletLegendItemInterface, LegendPosition } from '../types/legend';
 import { MarkerConfig } from '../types/common';
 import { AxisFormatter as axisFormatter } from '../types/axis';
 import { TooltipComponent } from '../tooltip/tooltip.component';
@@ -33,147 +35,57 @@ import { createMarkers } from '../utils';
 @Component({
   selector: 'ngx-area-chart',
   standalone: true,
-  imports: [
-    CommonModule,
-    VisXYContainerModule,
-    VisAreaModule,
-    VisAxisModule,
-    VisLineModule,
-    VisTooltipModule,
-    VisCrosshairModule,
-    VisBulletLegendModule,
-    TooltipComponent,
-  ],
+  imports: [TooltipComponent],
   template: `
     <div
+      class="ngx-area-chart-wrapper"
       [style.display]="'flex'"
       [style.flexDirection]="isLegendTop() ? 'column-reverse' : 'column'"
-      [style.gap]="'var(--vis-legend-spacing)'"
+      [style.gap]="'var(--vis-legend-spacing, 8px)'"
       [style]="markerCssVars()"
       [class.stacked-area-chart]="stacked()"
-      [id]="markerConfig()?.id"
+      [attr.id]="markerConfig()?.id"
       (click)="onClick($event)"
     >
       <svg width="0" height="0" style="position: absolute" aria-hidden="true">
         <defs [innerHTML]="svgDefs()"></defs>
         <defs [innerHTML]="markerSvgDefs()"></defs>
       </svg>
-      <vis-xy-container
-        [data]="data()"
-        [height]="height()"
-        [padding]="padding()"
-        [yDomain]="yDomain()"
-        [xDomain]="xDomain()"
-      >
-        @if (!hideTooltip()) {
-          <vis-tooltip
-            [horizontalPlacement]="Position.Right"
-            [verticalPlacement]="Position.Top"
-          ></vis-tooltip>
-        }
 
-        @if (stacked()) {
-          <vis-area
-            [x]="_x"
-            [y]="stackedYAccessors()"
-            [color]="stackedColorAccessor"
-            [opacity]="hideArea() ? 0 : DEFAULT_OPACITY"
-            [curveType]="curveType() || CurveType.MonotoneX"
-          ></vis-area>
-          <vis-line
-            [x]="_x"
-            [y]="stackedLineYAccessors()"
-            [color]="stackedColorAccessor"
-            [curveType]="curveType() || CurveType.MonotoneX"
-            [lineWidth]="lineWidth()"
-          ></vis-line>
-        } @else {
-          @for (categoryId of categoryKeys(); track categoryId; let i = $index) {
-            <vis-area
-              [x]="_x"
-              [y]="getYAccessor(categoryId)"
-              [color]="getGradientSelector(i)"
-              [opacity]="hideArea() ? 0 : DEFAULT_OPACITY"
-              [curveType]="curveType() || CurveType.MonotoneX"
-            ></vis-area>
-            <vis-line
-              [x]="_x"
-              [y]="getYAccessor(categoryId)"
-              [color]="colors()[i]"
-              [curveType]="curveType() || CurveType.MonotoneX"
-              [lineWidth]="lineWidth()"
-              [lineDashArray]="lineDashArray() ? lineDashArray()![i] : undefined"
-            ></vis-line>
-          }
-        }
-
-        @if (!hideXAxis()) {
-          <vis-axis
-            type="x"
-            [label]="xLabel()"
-            [labelMargin]="8"
-            [numTicks]="xNumTicks()"
-            [tickFormat]="xFormatter()"
-            [tickValues]="xExplicitTicksValues()"
-            [gridLine]="xGridLine()"
-            [domainLine]="xDomainLine()"
-            [tickLine]="xTickLine()"
-            [minMaxTicksOnly]="minMaxTicksOnly()"
-          ></vis-axis>
-        }
-
-        @if (!hideYAxis()) {
-          <vis-axis
-            type="y"
-            [label]="yLabel()"
-            [numTicks]="yNumTicks()"
-            [tickFormat]="yFormatter()"
-            [gridLine]="yGridLine()"
-            [domainLine]="yDomainLine()"
-            [tickLine]="yTickLine()"
-          ></vis-axis>
-        }
-
-        @if (!hideTooltip()) {
-          <vis-crosshair
-            [template]="onCrosshairUpdate"
-          ></vis-crosshair>
-        }
-      </vis-xy-container>
+      <!-- Chart container managed by unovis/ts -->
+      <div #chartContainer class="ngx-area-chart-container"></div>
 
       @if (!hideLegend()) {
         <div
+          #legendContainer
+          class="ngx-area-chart-legend"
           [style.display]="'flex'"
           [style.justifyContent]="legendAlignment()"
-        >
-          <vis-bullet-legend
-            [style]="legendStyle()"
-            [items]="legendItems()"
-          ></vis-bullet-legend>
-        </div>
+        ></div>
       }
 
+      <!-- Hidden tooltip template -->
       <div #tooltipWrapper style="display: none">
         @if (hoverValues()) {
-            <ngx-tooltip
-              [data]="hoverValues()!"
-              [categories]="categories()"
-              [titleFormatter]="tooltipTitleFormatter()"
-              [yFormatter]="yFormatter()"
-            ></ngx-tooltip>
+          <ngx-tooltip
+            [data]="hoverValues()!"
+            [categories]="categories()"
+            [titleFormatter]="tooltipTitleFormatter()"
+            [yFormatter]="yFormatter()"
+          ></ngx-tooltip>
         }
       </div>
     </div>
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class AreaChartComponent<T extends Record<string, any>> {
+export class AreaChartComponent<T extends Record<string, any>> implements OnDestroy {
   /** The data to be displayed in the chart. */
   readonly data = input.required<T[]>();
-  
+
   /** The height of the chart in pixels. Default is 400. */
   readonly height = input<number>(400);
-  
+
   /** Padding around the chart area. */
   readonly padding = input<{ top: number; right: number; bottom: number; left: number }>({
     top: 5,
@@ -181,118 +93,140 @@ export class AreaChartComponent<T extends Record<string, any>> {
     bottom: 5,
     left: 5,
   });
-  
+
   /** Configuration for each category (line/area) in the chart. Keyed by category property name. */
   readonly categories = input.required<Record<string, BulletLegendItemInterface>>();
-  
+
   /** Whether to stack the areas on top of each other. */
   readonly stacked = input<boolean>(false);
-  
+
   /** Whether to hide the filled area and only show lines. */
   readonly hideArea = input<boolean>(false);
-  
+
   /** The type of curve to use for the lines/areas. */
   readonly curveType = input<CurveType>();
-  
+
   /** Thickness of the lines. Default is 2. */
   readonly lineWidth = input<number>(2);
+
   /** Array of dash patterns for each line. */
   readonly lineDashArray = input<number[][]>();
-  
+
   /** Label for the X axis. */
   readonly xLabel = input<string>();
-  
+
   /** Label for the Y axis. */
   readonly yLabel = input<string>();
-  
+
   /** Formatter function for X axis tick labels. */
   readonly xFormatter = input<axisFormatter>();
-  
+
   /** Formatter function for Y axis tick labels. */
   readonly yFormatter = input<axisFormatter>();
-  
+
   /** Number of ticks to show on the X axis. */
   readonly xNumTicks = input<number>();
-  
+
   /** Specific values to show on the X axis. */
   readonly xExplicitTicks = input<Array<number | string | Date>>();
-  readonly xExplicitTicksValues = computed(() => this.xExplicitTicks() as any);
-  
+  readonly xExplicitTicksValues = computed(() => this.xExplicitTicks() as number[] | undefined);
+
   /** If true, only shows the first and last tick labels on the X axis. */
   readonly minMaxTicksOnly = input<boolean>(false);
-  
+
   /** Number of ticks to show on the Y axis. */
   readonly yNumTicks = input<number>();
-  
+
   /** Whether to hide the X axis entirely. */
   readonly hideXAxis = input<boolean>(false);
-  
+
   /** Whether to hide the Y axis entirely. */
   readonly hideYAxis = input<boolean>(false);
+
   /** Whether to show grid lines for the X axis. */
   readonly xGridLine = input<boolean>(false);
-  
+
   /** Whether to show grid lines for the Y axis. */
   readonly yGridLine = input<boolean>(false);
-  
+
   /** Whether to show the domain line for the X axis. */
   readonly xDomainLine = input<boolean>(false);
-  
+
   /** Whether to show the domain line for the Y axis. */
   readonly yDomainLine = input<boolean>(false);
-  
+
   /** Whether to show tick lines for the X axis. */
   readonly xTickLine = input<boolean>(false);
-  
+
   /** Whether to show tick lines for the Y axis. */
   readonly yTickLine = input<boolean>(false);
-  
+
   /** Whether to hide the tooltip. */
   readonly hideTooltip = input<boolean>(false);
-  
+
   /** Whether to hide the legend. */
   readonly hideLegend = input<boolean>(false);
-  
+
   /** Position of the legend relative to the chart. */
   readonly legendPosition = input<LegendPosition>(LegendPosition.BottomCenter);
-  
+
   /** Custom styles for the legend. */
   readonly legendStyle = input<Record<string, string>>();
-  
+
   /** Custom styles for the tooltip. */
   readonly tooltipStyle = input<Record<string, string>>({});
-  
+
   /** Formatter for the tooltip title. */
   readonly tooltipTitleFormatter = input<(data: T) => string | number>();
-  
+
   /** Configuration for svg markers (dots) on the lines. */
   readonly markerConfig = input<MarkerConfig>();
-  
+
   /** Gradient stop configuration for area charts. */
   readonly gradientStops = input<Array<{ offset: string; stopOpacity: number }>>([
     { offset: '0%', stopOpacity: 1 },
     { offset: '75%', stopOpacity: 0 },
   ]);
-  
+
   /** Manual Y domain [min, max]. */
   readonly yDomain = input<[number, number]>();
-  
+
   /** Manual X domain [min, max]. */
   readonly xDomain = input<[number, number]>();
 
   /** Event emitted when the chart or a segment is clicked. */
   readonly click = output<{ event: MouseEvent; values?: T }>();
 
+  // Template refs
+  readonly chartContainer = viewChild<ElementRef<HTMLDivElement>>('chartContainer');
+  readonly legendContainer = viewChild<ElementRef<HTMLDivElement>>('legendContainer');
   readonly tooltipWrapper = viewChild<ElementRef<HTMLDivElement>>('tooltipWrapper');
+
+  // State
   readonly hoverValues = signal<T | undefined>(undefined);
 
+  // Constants
   readonly DEFAULT_OPACITY = 0.5;
   readonly DEFAULT_COLOR = '#3b82f6';
-  readonly Position = Position;
-  readonly CurveType = CurveType;
 
+  // Unovis instances
+  private container: XYContainer<T> | null = null;
+  private areas: Area<T>[] = [];
+  private lines: Line<T>[] = [];
+  private xAxis: Axis<T> | null = null;
+  private yAxis: Axis<T> | null = null;
+  private crosshair: Crosshair<T> | null = null;
+  private tooltip: Tooltip | null = null;
+  private legend: BulletLegend | null = null;
+
+  // Injected services
+  private readonly platformId = inject(PLATFORM_ID);
+  private readonly cdr = inject(ChangeDetectorRef);
+  private readonly destroyRef = inject(DestroyRef);
+
+  // Computed values
   readonly categoryKeys = computed(() => Object.keys(this.categories()));
-  
+
   readonly colors = computed(() => {
     const cats = this.categories();
     return Object.keys(cats).map((key, index) => {
@@ -303,7 +237,7 @@ export class AreaChartComponent<T extends Record<string, any>> {
   });
 
   readonly isLegendTop = computed(() => this.legendPosition().startsWith('top'));
-  
+
   readonly legendAlignment = computed(() => {
     const pos = this.legendPosition();
     if (pos.includes('left')) return 'flex-start';
@@ -321,36 +255,18 @@ export class AreaChartComponent<T extends Record<string, any>> {
   readonly svgDefs = computed(() => {
     const stops = this.gradientStops();
     const colors = this.colors();
-    
-    return colors.map((color, index) => {
-      const id = `gradient-${index}-${color.replace(/#/g, '')}`;
-      return `
+
+    return colors
+      .map((color, index) => {
+        const id = `gradient-${index}-${color.replace(/#/g, '')}`;
+        return `
         <linearGradient id="${id}" gradientTransform="rotate(90)">
-          ${stops.map(stop => `
-            <stop offset="${stop.offset}" stop-color="${color}" stop-opacity="${stop.stopOpacity}" />
-          `).join('')}
+          ${stops.map((stop) => `<stop offset="${stop.offset}" stop-color="${color}" stop-opacity="${stop.stopOpacity}" />`).join('')}
           <stop offset="100%" stop-color="${color}" stop-opacity="0" />
         </linearGradient>
       `;
-    }).join('');
-  });
-
-  readonly stackedYAccessors = computed(() => {
-    const keys = this.categoryKeys();
-    return keys.map(key => (d: T) => Number(d[key]));
-  });
-
-  readonly stackedLineYAccessors = computed(() => {
-    const keys = this.categoryKeys();
-    return keys.map((_, index) => {
-      return (d: T) => {
-        let sum = 0;
-        for (let i = 0; i <= index; i++) {
-          sum += Number(d[keys[i]]) || 0;
-        }
-        return sum;
-      };
-    });
+      })
+      .join('');
   });
 
   readonly markerSvgDefs = computed(() => {
@@ -370,29 +286,292 @@ export class AreaChartComponent<T extends Record<string, any>> {
     return vars;
   });
 
-  readonly stackedColorAccessor: any = (_d: any, i: number) => this.colors()[i] ?? this.DEFAULT_COLOR;
+  constructor() {
+    // Initialize chart after view is ready (browser only)
+    effect(() => {
+      const container = this.chartContainer();
+      const data = this.data();
+      const categories = this.categories();
 
-  _x: any = (_: any, i: number) => i;
+      if (!isPlatformBrowser(this.platformId) || !container?.nativeElement) {
+        return;
+      }
 
-  getYAccessor(categoryId: string): any {
-    return (d: T) => Number(d[categoryId]);
+      if (!this.container) {
+        this.initializeChart(container.nativeElement, data);
+      } else {
+        this.updateChart(data);
+      }
+    });
+
+    // Update legend when items change
+    effect(() => {
+      const legendContainer = this.legendContainer();
+      const items = this.legendItems();
+      const hideLegend = this.hideLegend();
+
+      if (!isPlatformBrowser(this.platformId) || hideLegend || !legendContainer?.nativeElement) {
+        return;
+      }
+
+      this.updateLegend(legendContainer.nativeElement, items);
+    });
+
+    // Cleanup on destroy
+    this.destroyRef.onDestroy(() => this.destroyChart());
   }
 
-  getGradientSelector(index: number): any {
-    const color = this.colors()[index];
-    const id = `gradient-${index}-${color.replace(/#/g, '')}`;
-    return `url(#${id})`;
+  ngOnDestroy(): void {
+    this.destroyChart();
   }
 
-  onCrosshairUpdate = (d: T): string => {
+  private initializeChart(element: HTMLElement, data: T[]): void {
+    const keys = this.categoryKeys();
+    const colors = this.colors();
+    const stacked = this.stacked();
+
+    // Create components
+    this.areas = [];
+    this.lines = [];
+
+    if (stacked) {
+      // Stacked mode: single Area and Line with multiple y accessors
+      const yAccessors = keys.map((key) => (d: T) => Number(d[key]));
+      const lineYAccessors = keys.map((_, index) => (d: T) => {
+        let sum = 0;
+        for (let i = 0; i <= index; i++) {
+          sum += Number(d[keys[i]]) || 0;
+        }
+        return sum;
+      });
+
+      const area = new Area<T>({
+        x: (_: T, i: number) => i,
+        y: yAccessors,
+        color: colors, // Use array of colors for stacked
+        opacity: this.hideArea() ? 0 : this.DEFAULT_OPACITY,
+        curveType: this.curveType() ?? CurveType.MonotoneX,
+      });
+      this.areas.push(area);
+
+      const line = new Line<T>({
+        x: (_: T, i: number) => i,
+        y: lineYAccessors,
+        color: colors, // Use array of colors for stacked
+        curveType: this.curveType() ?? CurveType.MonotoneX,
+        lineWidth: this.lineWidth(),
+      });
+      this.lines.push(line);
+    } else {
+      // Non-stacked mode: separate Area and Line for each category
+      keys.forEach((key, index) => {
+        const gradientId = `gradient-${index}-${colors[index].replace(/#/g, '')}`;
+        const area = new Area<T>({
+          x: (_: T, i: number) => i,
+          y: (d: T) => Number(d[key]),
+          color: `url(#${gradientId})`,
+          opacity: this.hideArea() ? 0 : this.DEFAULT_OPACITY,
+          curveType: this.curveType() ?? CurveType.MonotoneX,
+        });
+        this.areas.push(area);
+
+        const lineDashArray = this.lineDashArray();
+        const line = new Line<T>({
+          x: (_: T, i: number) => i,
+          y: (d: T) => Number(d[key]),
+          color: colors[index],
+          curveType: this.curveType() ?? CurveType.MonotoneX,
+          lineWidth: this.lineWidth(),
+          lineDashArray: lineDashArray ? lineDashArray[index] : undefined,
+        });
+        this.lines.push(line);
+      });
+    }
+
+    // Create axes
+    if (!this.hideXAxis()) {
+      this.xAxis = new Axis<T>({
+        type: 'x',
+        label: this.xLabel(),
+        labelMargin: 8,
+        numTicks: this.xNumTicks(),
+        tickFormat: this.xFormatter(),
+        tickValues: this.xExplicitTicksValues(),
+        gridLine: this.xGridLine(),
+        domainLine: this.xDomainLine(),
+        tickLine: this.xTickLine(),
+        minMaxTicksOnly: this.minMaxTicksOnly(),
+      });
+    }
+
+    if (!this.hideYAxis()) {
+      this.yAxis = new Axis<T>({
+        type: 'y',
+        label: this.yLabel(),
+        numTicks: this.yNumTicks(),
+        tickFormat: this.yFormatter(),
+        gridLine: this.yGridLine(),
+        domainLine: this.yDomainLine(),
+        tickLine: this.yTickLine(),
+      });
+    }
+
+    // Create tooltip and crosshair
+    if (!this.hideTooltip()) {
+      this.tooltip = new Tooltip({
+        horizontalPlacement: Position.Right,
+        verticalPlacement: Position.Top,
+      });
+
+      this.crosshair = new Crosshair<T>({
+        template: (d: T) => this.onCrosshairUpdate(d),
+      });
+    }
+
+    // Collect all components
+    const components = [
+      ...this.areas,
+      ...this.lines,
+      ...(this.xAxis ? [this.xAxis] : []),
+      ...(this.yAxis ? [this.yAxis] : []),
+      ...(this.crosshair ? [this.crosshair] : []),
+    ];
+
+    // Create container
+    this.container = new XYContainer<T>(element, {
+      height: this.height(),
+      padding: this.padding(),
+      yDomain: this.yDomain(),
+      xDomain: this.xDomain(),
+      components,
+      tooltip: this.tooltip ?? undefined,
+    }, data);
+  }
+
+  private updateChart(data: T[]): void {
+    if (!this.container) return;
+
+    const keys = this.categoryKeys();
+    const colors = this.colors();
+    const stacked = this.stacked();
+
+    // Update areas and lines
+    if (stacked) {
+      const yAccessors = keys.map((key) => (d: T) => Number(d[key]));
+      const lineYAccessors = keys.map((_, index) => (d: T) => {
+        let sum = 0;
+        for (let i = 0; i <= index; i++) {
+          sum += Number(d[keys[i]]) || 0;
+        }
+        return sum;
+      });
+
+      this.areas[0]?.setConfig({
+        x: (_: T, i: number) => i,
+        y: yAccessors,
+        color: colors, // Use array of colors for stacked
+        opacity: this.hideArea() ? 0 : this.DEFAULT_OPACITY,
+        curveType: this.curveType() ?? CurveType.MonotoneX,
+      });
+
+      this.lines[0]?.setConfig({
+        x: (_: T, i: number) => i,
+        y: lineYAccessors,
+        color: colors, // Use array of colors for stacked
+        curveType: this.curveType() ?? CurveType.MonotoneX,
+        lineWidth: this.lineWidth(),
+      });
+    } else {
+      keys.forEach((key, index) => {
+        const gradientId = `gradient-${index}-${colors[index].replace(/#/g, '')}`;
+        const lineDashArray = this.lineDashArray();
+
+        this.areas[index]?.setConfig({
+          x: (_: T, i: number) => i,
+          y: (d: T) => Number(d[key]),
+          color: `url(#${gradientId})`,
+          opacity: this.hideArea() ? 0 : this.DEFAULT_OPACITY,
+          curveType: this.curveType() ?? CurveType.MonotoneX,
+        });
+
+        this.lines[index]?.setConfig({
+          x: (_: T, i: number) => i,
+          y: (d: T) => Number(d[key]),
+          color: colors[index],
+          curveType: this.curveType() ?? CurveType.MonotoneX,
+          lineWidth: this.lineWidth(),
+          lineDashArray: lineDashArray ? lineDashArray[index] : undefined,
+        });
+      });
+    }
+
+    // Update axes
+    if (this.xAxis) {
+      this.xAxis.setConfig({
+        type: 'x',
+        label: this.xLabel(),
+        labelMargin: 8,
+        numTicks: this.xNumTicks(),
+        tickFormat: this.xFormatter(),
+        tickValues: this.xExplicitTicksValues(),
+        gridLine: this.xGridLine(),
+        domainLine: this.xDomainLine(),
+        tickLine: this.xTickLine(),
+        minMaxTicksOnly: this.minMaxTicksOnly(),
+      });
+    }
+
+    if (this.yAxis) {
+      this.yAxis.setConfig({
+        type: 'y',
+        label: this.yLabel(),
+        numTicks: this.yNumTicks(),
+        tickFormat: this.yFormatter(),
+        gridLine: this.yGridLine(),
+        domainLine: this.yDomainLine(),
+        tickLine: this.yTickLine(),
+      });
+    }
+
+    // Update container
+    this.container.updateContainer({
+      height: this.height(),
+      padding: this.padding(),
+      yDomain: this.yDomain(),
+      xDomain: this.xDomain(),
+    });
+
+    this.container.setData(data);
+  }
+
+  private updateLegend(element: HTMLElement, items: BulletLegendItemInterface[]): void {
+    if (!this.legend) {
+      this.legend = new BulletLegend(element, { items });
+    } else {
+      this.legend.update({ items });
+    }
+  }
+
+  private destroyChart(): void {
+    this.container?.destroy();
+    this.legend?.destroy();
+    this.container = null;
+    this.legend = null;
+    this.areas = [];
+    this.lines = [];
+    this.xAxis = null;
+    this.yAxis = null;
+    this.crosshair = null;
+    this.tooltip = null;
+  }
+
+  private onCrosshairUpdate = (d: T): string => {
     this.hoverValues.set(d);
     this.cdr.detectChanges();
     return this.tooltipWrapper()?.nativeElement.innerHTML || '';
   };
 
-  onClick(event: MouseEvent) {
+  onClick(event: MouseEvent): void {
     this.click.emit({ event, values: this.hoverValues() });
   }
-
-  private cdr = inject(ChangeDetectorRef);
 }

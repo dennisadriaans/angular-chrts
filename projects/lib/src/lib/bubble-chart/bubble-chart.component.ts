@@ -3,102 +3,55 @@ import {
   ChangeDetectorRef,
   Component,
   computed,
+  DestroyRef,
+  effect,
   ElementRef,
   inject,
   input,
+  OnDestroy,
   output,
+  PLATFORM_ID,
   signal,
   viewChild,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { isPlatformBrowser } from '@angular/common';
 import {
-  VisXYContainerModule,
-  VisScatterModule,
-  VisAxisModule,
-  VisTooltipModule,
-  VisBulletLegendModule,
-} from '@unovis/angular';
-import { Position, Scatter, type NumericAccessor } from '@unovis/ts';
+  XYContainer,
+  Scatter,
+  Axis,
+  Tooltip,
+  BulletLegend,
+  Position,
+  type NumericAccessor,
+} from '@unovis/ts';
 import { LegendPosition, BulletLegendItemInterface, AxisConfig, CrosshairConfig } from '../types';
 import { TooltipComponent } from '../tooltip';
 
 @Component({
   selector: 'ngx-bubble-chart',
   standalone: true,
-  imports: [
-    CommonModule,
-    VisXYContainerModule,
-    VisScatterModule,
-    VisAxisModule,
-    VisTooltipModule,
-    VisBulletLegendModule,
-    TooltipComponent,
-  ],
+  imports: [TooltipComponent],
   template: `
     <div
+      class="ngx-bubble-chart-wrapper"
       [style.display]="'flex'"
       [style.flexDirection]="isLegendTop() ? 'column-reverse' : 'column'"
-      [style.gap]="'var(--vis-legend-spacing)'"
+      [style.gap]="'var(--vis-legend-spacing, 8px)'"
+      (click)="onClick($event)"
     >
-      <vis-xy-container
-        [data]="data()"
-        [height]="height()"
-        [padding]="padding()"
-        [scaleByDomain]="true"
-        (click)="onClick($event)"
-      >
-        @if (!hideTooltip()) {
-          <vis-tooltip [triggers]="tooltipTriggers"></vis-tooltip>
-        }
-
-        <vis-scatter
-          [x]="xAccessor()"
-          [y]="yAccessor()"
-          [color]="colorAccessor"
-          [size]="sizeAccessorFn()"
-          [labelPosition]="labelPosition() || Position.Bottom"
-          [sizeRange]="sizeRange() || [1, 20]"
-          cursor="pointer"
-        ></vis-scatter>
-
-        @if (!hideXAxis()) {
-          <vis-axis
-            type="x"
-            [label]="xLabel()"
-            [tickFormat]="xFormatterFn"
-            [gridLine]="xGridLine()"
-            [domainLine]="!!xDomainLine()"
-            [tickLine]="xTickLine()"
-            [numTicks]="xNumTicks()"
-            [tickValues]="$any(xExplicitTicks())"
-            [minMaxTicksOnly]="minMaxTicksOnly()"
-          ></vis-axis>
-        }
-
-        @if (!hideYAxis()) {
-          <vis-axis
-            type="y"
-            [label]="yLabel()"
-            [tickFormat]="yFormatterFn"
-            [gridLine]="yGridLine()"
-            [domainLine]="!!yDomainLine()"
-            [tickLine]="yTickLine()"
-            [numTicks]="yNumTicks()"
-          ></vis-axis>
-        }
-      </vis-xy-container>
+      <!-- Chart container managed by unovis/ts -->
+      <div #chartContainer class="ngx-bubble-chart-container"></div>
 
       @if (!hideLegend()) {
         <div
+          #legendContainer
+          class="ngx-bubble-chart-legend"
           [style.display]="'flex'"
           [style.justifyContent]="legendAlignment()"
-        >
-          <vis-bullet-legend
-            [items]="legendItems()"
-          ></vis-bullet-legend>
-        </div>
+        ></div>
       }
 
+      <!-- Hidden tooltip template -->
       <div #tooltipWrapper style="display: none">
         @if (hoverValues()) {
           <ngx-tooltip
@@ -113,13 +66,13 @@ import { TooltipComponent } from '../tooltip';
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class BubbleChartComponent<T extends Record<string, any>> {
+export class BubbleChartComponent<T extends Record<string, any>> implements OnDestroy {
   /** The data to be displayed in the bubble chart. */
   readonly data = input.required<T[]>();
-  
+
   /** The height of the chart in pixels. Default is 600. */
   readonly height = input<number>(600);
-  
+
   /** Padding around the chart area. */
   readonly padding = input<{ top: number; right: number; bottom: number; left: number }>({
     top: 5,
@@ -127,97 +80,125 @@ export class BubbleChartComponent<T extends Record<string, any>> {
     bottom: 5,
     left: 5,
   });
-  
+
   /** Configuration for each category mapping to the bubbles. Keyed by category property name. */
   readonly categories = input<Record<string, BulletLegendItemInterface>>({});
-  
+
   /** The data key used to categorize bubbles. */
   readonly categoryKey = input<keyof T>();
-  
+
   /** Accessor function for X-axis values. */
   readonly xAccessor = input<NumericAccessor<T>>();
-  
+
   /** Accessor function for Y-axis values. */
   readonly yAccessor = input<NumericAccessor<T>>();
-  
+
   /** Accessor function for bubble size. */
   readonly sizeAccessor = input<NumericAccessor<T>>();
-  
+
   /** Position of labels relative to bubbles. */
   readonly labelPosition = input<Position>();
-  
+
   /** Range of bubble sizes [min pixels, max pixels]. */
   readonly sizeRange = input<[number, number]>();
-  
+
   /** Label for the X axis. */
   readonly xLabel = input<string>('');
-  
+
   /** Label for the Y axis. */
   readonly yLabel = input<string>('');
-  
+
   /** Formatter function for X axis tick labels. */
   readonly xFormatter = input<(tick: number | Date, i?: number, ticks?: (number | Date)[]) => string>();
-  
+
   /** Formatter function for Y axis tick labels. */
   readonly yFormatter = input<(tick: number | Date, i?: number, ticks?: (number | Date)[]) => string>();
-  
+
   /** Formatter for the tooltip title. */
   readonly tooltipTitleFormatter = input<(data: T) => string | number>();
-  
+
   /** Number of ticks on the X axis. */
   readonly xNumTicks = input<number>();
-  
+
   /** Number of ticks on the Y axis. */
   readonly yNumTicks = input<number>();
-  
+
   /** Specific values to show on the X axis. */
   readonly xExplicitTicks = input<Array<number | string | Date>>();
-  
+
   /** If true, only shows the first and last tick labels on the X axis. */
   readonly minMaxTicksOnly = input<boolean>(false);
-  
+
   /** Whether to hide the X axis entirely. */
   readonly hideXAxis = input<boolean>(false);
-  
+
   /** Whether to hide the Y axis entirely. */
   readonly hideYAxis = input<boolean>(false);
-  
+
   /** Whether to show grid lines for the X axis. */
   readonly xGridLine = input<boolean>(false);
-  
+
   /** Whether to show grid lines for the Y axis. */
   readonly yGridLine = input<boolean>(true);
-  
+
   /** Whether to show the domain line for the X axis. */
   readonly xDomainLine = input<boolean>(true);
-  
+
   /** Whether to show the domain line for the Y axis. */
   readonly yDomainLine = input<boolean>(true);
-  
+
   /** Whether to show tick lines for the X axis. */
   readonly xTickLine = input<boolean>(true);
-  
+
   /** Whether to show tick lines for the Y axis. */
   readonly yTickLine = input<boolean>(true);
-  
+
   /** Whether to hide the tooltip. */
   readonly hideTooltip = input<boolean>(false);
-  
+
   /** Whether to hide the legend. */
   readonly hideLegend = input<boolean>(false);
+
+  /** Position of the legend relative to the chart. */
   readonly legendPosition = input<LegendPosition>(LegendPosition.BottomCenter);
+
+  /** Custom styles for the legend. */
   readonly legendStyle = input<Record<string, string>>();
+
+  /** Crosshair configuration. */
   readonly crosshairConfig = input<CrosshairConfig>({ color: '#666' });
+
+  /** Advanced configuration for the X axis. */
   readonly xAxisConfig = input<AxisConfig>();
+
+  /** Advanced configuration for the Y axis. */
   readonly yAxisConfig = input<AxisConfig>();
 
+  /** Event emitted when a bubble is clicked. */
   readonly click = output<{ event: MouseEvent; values?: T }>();
 
+  // Template refs
+  readonly chartContainer = viewChild<ElementRef<HTMLDivElement>>('chartContainer');
+  readonly legendContainer = viewChild<ElementRef<HTMLDivElement>>('legendContainer');
   readonly tooltipWrapper = viewChild<ElementRef<HTMLDivElement>>('tooltipWrapper');
+
+  // State
   readonly hoverValues = signal<T | undefined>(undefined);
 
-  readonly Position = Position;
+  // Unovis instances
+  private container: XYContainer<T> | null = null;
+  private scatter: Scatter<T> | null = null;
+  private xAxisComponent: Axis<T> | null = null;
+  private yAxisComponent: Axis<T> | null = null;
+  private tooltip: Tooltip | null = null;
+  private legend: BulletLegend | null = null;
 
+  // Injected services
+  private readonly platformId = inject(PLATFORM_ID);
+  private readonly cdr = inject(ChangeDetectorRef);
+  private readonly destroyRef = inject(DestroyRef);
+
+  // Computed values
   readonly isLegendTop = computed(() => this.legendPosition().startsWith('top'));
 
   readonly legendAlignment = computed(() => {
@@ -241,7 +222,181 @@ export class BubbleChartComponent<T extends Record<string, any>> {
     return (d: any) => (typeof d.comments === 'number' ? d.comments : 1);
   });
 
-  colorAccessor = (d: T): string | null | undefined => {
+  constructor() {
+    // Initialize chart after view is ready (browser only)
+    effect(() => {
+      const container = this.chartContainer();
+      const data = this.data();
+      const categories = this.categories();
+
+      if (!isPlatformBrowser(this.platformId) || !container?.nativeElement) {
+        return;
+      }
+
+      if (!this.container) {
+        this.initializeChart(container.nativeElement, data);
+      } else {
+        this.updateChart(data);
+      }
+    });
+
+    // Update legend when items change
+    effect(() => {
+      const legendContainer = this.legendContainer();
+      const items = this.legendItems();
+      const hideLegend = this.hideLegend();
+
+      if (!isPlatformBrowser(this.platformId) || hideLegend || !legendContainer?.nativeElement) {
+        return;
+      }
+
+      this.updateLegend(legendContainer.nativeElement, items);
+    });
+
+    // Cleanup on destroy
+    this.destroyRef.onDestroy(() => this.destroyChart());
+  }
+
+  ngOnDestroy(): void {
+    this.destroyChart();
+  }
+
+  private initializeChart(element: HTMLElement, data: T[]): void {
+    // Create scatter component
+    this.scatter = new Scatter<T>({
+      x: this.xAccessor(),
+      y: this.yAccessor(),
+      color: (d: T) => this.getColorForDatum(d),
+      size: this.sizeAccessorFn(),
+      labelPosition: this.labelPosition() ?? Position.Bottom,
+      sizeRange: this.sizeRange() ?? [1, 20],
+      cursor: 'pointer',
+    });
+
+    // Create axes
+    if (!this.hideXAxis()) {
+      this.xAxisComponent = new Axis<T>({
+        type: 'x',
+        label: this.xLabel(),
+        tickFormat: this.xFormatterFn,
+        gridLine: this.xGridLine(),
+        domainLine: !!this.xDomainLine(),
+        tickLine: this.xTickLine(),
+        numTicks: this.xNumTicks(),
+        tickValues: this.xExplicitTicks() as number[] | undefined,
+        minMaxTicksOnly: this.minMaxTicksOnly(),
+      });
+    }
+
+    if (!this.hideYAxis()) {
+      this.yAxisComponent = new Axis<T>({
+        type: 'y',
+        label: this.yLabel(),
+        tickFormat: this.yFormatterFn,
+        gridLine: this.yGridLine(),
+        domainLine: !!this.yDomainLine(),
+        tickLine: this.yTickLine(),
+        numTicks: this.yNumTicks(),
+      });
+    }
+
+    // Create tooltip
+    if (!this.hideTooltip()) {
+      this.tooltip = new Tooltip({
+        triggers: {
+          [Scatter.selectors.point]: (d: T) => this.getTooltipContent(d),
+        },
+      });
+    }
+
+    // Collect all components
+    const components = [
+      this.scatter,
+      ...(this.xAxisComponent ? [this.xAxisComponent] : []),
+      ...(this.yAxisComponent ? [this.yAxisComponent] : []),
+    ];
+
+    // Create container
+    this.container = new XYContainer<T>(element, {
+      height: this.height(),
+      padding: this.padding(),
+      scaleByDomain: true,
+      components,
+      tooltip: this.tooltip ?? undefined,
+    }, data);
+  }
+
+  private updateChart(data: T[]): void {
+    if (!this.container || !this.scatter) return;
+
+    // Update scatter config
+    this.scatter.setConfig({
+      x: this.xAccessor(),
+      y: this.yAccessor(),
+      color: (d: T) => this.getColorForDatum(d),
+      size: this.sizeAccessorFn(),
+      labelPosition: this.labelPosition() ?? Position.Bottom,
+      sizeRange: this.sizeRange() ?? [1, 20],
+      cursor: 'pointer',
+    });
+
+    // Update axes
+    if (this.xAxisComponent) {
+      this.xAxisComponent.setConfig({
+        type: 'x',
+        label: this.xLabel(),
+        tickFormat: this.xFormatterFn,
+        gridLine: this.xGridLine(),
+        domainLine: !!this.xDomainLine(),
+        tickLine: this.xTickLine(),
+        numTicks: this.xNumTicks(),
+        tickValues: this.xExplicitTicks() as number[] | undefined,
+        minMaxTicksOnly: this.minMaxTicksOnly(),
+      });
+    }
+
+    if (this.yAxisComponent) {
+      this.yAxisComponent.setConfig({
+        type: 'y',
+        label: this.yLabel(),
+        tickFormat: this.yFormatterFn,
+        gridLine: this.yGridLine(),
+        domainLine: !!this.yDomainLine(),
+        tickLine: this.yTickLine(),
+        numTicks: this.yNumTicks(),
+      });
+    }
+
+    // Update container
+    this.container.updateContainer({
+      height: this.height(),
+      padding: this.padding(),
+      scaleByDomain: true,
+    });
+
+    this.container.setData(data);
+  }
+
+  private updateLegend(element: HTMLElement, items: BulletLegendItemInterface[]): void {
+    if (!this.legend) {
+      this.legend = new BulletLegend(element, { items });
+    } else {
+      this.legend.update({ items });
+    }
+  }
+
+  private destroyChart(): void {
+    this.container?.destroy();
+    this.legend?.destroy();
+    this.container = null;
+    this.scatter = null;
+    this.xAxisComponent = null;
+    this.yAxisComponent = null;
+    this.tooltip = null;
+    this.legend = null;
+  }
+
+  private getColorForDatum(d: T): string | null | undefined {
     const cats = this.categories();
     const catKey = this.categoryKey();
     if (!cats || !catKey) {
@@ -263,33 +418,25 @@ export class BubbleChartComponent<T extends Record<string, any>> {
 
     // Ensure we return a string, not an array
     return Array.isArray(categoryColor) ? categoryColor[0] : categoryColor;
-  };
+  }
 
-  xFormatterFn = (tick: number | Date, i: number, ticks: (number | Date)[]) => {
+  private getTooltipContent(d: T): string {
+    this.hoverValues.set(d);
+    this.cdr.detectChanges();
+    return d ? this.tooltipWrapper()?.nativeElement.innerHTML ?? '' : '';
+  }
+
+  private xFormatterFn = (tick: number | Date, i: number, ticks: (number | Date)[]): string => {
     const formatter = this.xFormatter();
     return formatter ? formatter(tick, i, ticks) : String(tick);
   };
 
-  yFormatterFn = (tick: number | Date, i: number, ticks: (number | Date)[]) => {
+  private yFormatterFn = (tick: number | Date, i: number, ticks: (number | Date)[]): string => {
     const formatter = this.yFormatter();
     return formatter ? formatter(tick, i, ticks) : String(tick);
   };
 
-  tooltipTriggers: Record<string, (d: T) => string> = {
-    [Scatter.selectors.point]: (d: T) => {
-      this.onCrosshairUpdate(d);
-      return d ? this.tooltipWrapper()?.nativeElement.innerHTML ?? '' : '';
-    },
-  };
-
-  onCrosshairUpdate(d: T): void {
-    this.hoverValues.set(d);
-    this.cdr.detectChanges();
-  }
-
   onClick(event: MouseEvent): void {
     this.click.emit({ event, values: this.hoverValues() });
   }
-
-  private cdr = inject(ChangeDetectorRef);
 }
