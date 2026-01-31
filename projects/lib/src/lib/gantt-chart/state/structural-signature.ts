@@ -4,6 +4,7 @@
  * Functions for tracking structural changes that require chart rebuild.
  */
 
+import { createCategoryKeySignature, hasBaseSignatureChanged } from '../../utils/shared';
 import type { GanttStructuralSignature } from '../types';
 
 /**
@@ -22,7 +23,7 @@ export function createGanttStructuralSignature(
   return {
     hideTooltip,
     hideLegend,
-    categoryKeys: Object.keys(categories).sort().join(','),
+    categoryKeys: createCategoryKeySignature(categories),
   };
 }
 
@@ -37,11 +38,5 @@ export function hasGanttSignatureChanged(
   prev: GanttStructuralSignature | null,
   next: GanttStructuralSignature
 ): boolean {
-  if (!prev) return true;
-
-  return (
-    prev.hideTooltip !== next.hideTooltip ||
-    prev.hideLegend !== next.hideLegend ||
-    prev.categoryKeys !== next.categoryKeys
-  );
+  return hasBaseSignatureChanged(prev, next);
 }

@@ -8,7 +8,7 @@
  * - DRY: Single source of truth for color handling
  */
 
-import type { BulletLegendItemInterface } from '@unovis/ts';
+import type { BulletLegendItemInterface } from '../../types';
 
 /**
  * Normalizes a color value to a single string.

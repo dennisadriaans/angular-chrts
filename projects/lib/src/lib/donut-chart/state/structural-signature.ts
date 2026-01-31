@@ -7,6 +7,7 @@
  * - SRP: Only responsible for signature management
  */
 
+import { hasBaseSignatureChanged } from '../../utils/shared';
 import { DonutType, type DonutStructuralSignature } from '../types';
 
 /**
@@ -40,11 +41,18 @@ export function hasDonutSignatureChanged(
   prev: DonutStructuralSignature | null,
   next: DonutStructuralSignature
 ): boolean {
-  if (!prev) return true;
-
-  return (
-    prev.type !== next.type ||
-    prev.hideTooltip !== next.hideTooltip ||
-    prev.hideLegend !== next.hideLegend
+  const baseChanged = hasBaseSignatureChanged(
+    prev
+      ? {
+          hideTooltip: prev.hideTooltip,
+          hideLegend: prev.hideLegend,
+        }
+      : null,
+    {
+      hideTooltip: next.hideTooltip,
+      hideLegend: next.hideLegend,
+    }
   );
+
+  return baseChanged || prev?.type !== next.type;
 }

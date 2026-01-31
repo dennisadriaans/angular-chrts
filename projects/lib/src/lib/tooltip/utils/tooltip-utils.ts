@@ -5,7 +5,7 @@
  * Uses shared utilities where possible.
  */
 
-import type { BulletLegendItemInterface } from '@unovis/ts';
+import type { BulletLegendItemInterface } from '../../types';
 import { TOOLTIP_BLOCKLIST_KEYS, type TooltipEntry } from '../types';
 
 // Re-export shared utilities

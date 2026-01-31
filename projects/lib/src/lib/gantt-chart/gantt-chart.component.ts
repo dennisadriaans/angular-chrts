@@ -27,9 +27,8 @@ import {
 } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { XYContainer, Timeline, Axis, Tooltip, BulletLegend, Position } from '@unovis/ts';
-import type { BulletLegendItemInterface } from '@unovis/ts';
 
-import { LegendPosition } from '../types/index';
+import { LegendPosition, type BulletLegendItemInterface } from '../types';
 import { TooltipComponent } from '../tooltip/index';
 
 import type { GanttStructuralSignature } from './types';

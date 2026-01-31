@@ -9,7 +9,7 @@
  * - OCP: Extended via CSS custom properties, not modification
  */
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
-import type { BulletLegendItemInterface } from '@unovis/ts';
+import type { BulletLegendItemInterface } from '../types';
 import type { AxisFormatter } from '../types/axis';
 import { getFirstPropertyValue } from '../utils/index';
 

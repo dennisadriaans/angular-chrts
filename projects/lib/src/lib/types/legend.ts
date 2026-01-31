@@ -3,6 +3,8 @@
  * These types define how legends are displayed and positioned in charts.
  */
 
+import type { BulletLegendItemInterface as UnovisBulletLegendItemInterface } from '@unovis/ts';
+
 /**
  * Available positions for chart legends.
  */
@@ -17,34 +19,11 @@ export enum LegendPosition {
 
 /**
  * Configuration for individual legend items.
- * Defines the appearance and behavior of each item in the chart legend.
+ *
+ * This is a type-only alias to the upstream Unovis type to avoid duplication
+ * and keep compatibility with Unovis components.
  */
-export interface BulletLegendItemInterface {
-  /**
-   * Display name for the legend item
-   */
-  name: string | number;
-  /**
-   * Color(s) for the legend item. Can be a single color or gradient.
-   */
-  color?: string | Array<string>;
-  /**
-   * Optional CSS class name for custom styling
-   */
-  className?: string;
-  /**
-   * Whether the legend item is in an inactive state
-   */
-  inactive?: boolean;
-  /**
-   * Whether the legend item is hidden
-   */
-  hidden?: boolean;
-  /**
-   * Whether the cursor should change to pointer on hover
-   */
-  pointer?: boolean;
-}
+export type BulletLegendItemInterface = UnovisBulletLegendItemInterface;
 
 /**
  * Alias for BulletLegendItemInterface specifically for area charts.

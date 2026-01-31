@@ -38,9 +38,8 @@ import {
 } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { SingleContainer, Donut, Tooltip, BulletLegend } from '@unovis/ts';
-import type { BulletLegendItemInterface } from '@unovis/ts';
 
-import { LegendPosition } from '../types/index';
+import { LegendPosition, type BulletLegendItemInterface } from '../types';
 import { TooltipComponent } from '../tooltip/index';
 
 import { DonutType, type DonutStructuralSignature } from './types';
