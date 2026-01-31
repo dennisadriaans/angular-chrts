@@ -240,6 +240,8 @@ export class DonutChartComponent implements OnDestroy {
     this.container.updateContainer({
       height: this.height(),
       margin: {},
+      component: this.donut,
+      tooltip: this.tooltip ?? undefined,
     });
 
     this.container.setData(data);

@@ -23,6 +23,7 @@ import {
   Tooltip,
   BulletLegend,
   Orientation,
+  Position,
 } from '@unovis/ts';
 import { LegendPosition, BulletLegendItemInterface, AxisConfig } from '../types/index';
 import { TooltipComponent } from '../tooltip/tooltip.component';
@@ -78,8 +79,8 @@ export class BarChartComponent<T extends Record<string, any>> implements OnDestr
   readonly padding = input<{ top: number; right: number; bottom: number; left: number }>({
     top: 5,
     right: 5,
-    bottom: 5,
-    left: 5,
+    bottom: 30,
+    left: 40,
   });
 
   /** Configuration for each category mapping to the axes. Keyed by category property name. */
@@ -304,6 +305,7 @@ export class BarChartComponent<T extends Record<string, any>> implements OnDestr
     if (!this.hideXAxis()) {
       this.xAxisComponent = new Axis<T>({
         type: 'x',
+        position: Position.Bottom,
         label: this.xLabel(),
         tickFormat: this.xFormatterFn,
         gridLine: this.xGridLine(),
@@ -337,20 +339,22 @@ export class BarChartComponent<T extends Record<string, any>> implements OnDestr
       });
     }
 
-    // Collect all components
-    const components = [
-      this.barComponent,
-      ...(this.xAxisComponent ? [this.xAxisComponent] : []),
-      ...(this.yAxisComponent ? [this.yAxisComponent] : []),
-    ];
+    // Collect drawable components (axes are managed by XYContainer)
+    const components = [this.barComponent];
 
     // Create container
-    this.container = new XYContainer<T>(element, {
-      height: this.height(),
-      padding: this.padding(),
-      components,
-      tooltip: this.tooltip ?? undefined,
-    }, data);
+    this.container = new XYContainer<T>(
+      element,
+      {
+        height: this.height(),
+        padding: this.padding(),
+        components,
+        xAxis: this.xAxisComponent ?? undefined,
+        yAxis: this.yAxisComponent ?? undefined,
+        tooltip: this.tooltip ?? undefined,
+      },
+      data,
+    );
   }
 
   private updateChart(data: T[]): void {
@@ -387,6 +391,7 @@ export class BarChartComponent<T extends Record<string, any>> implements OnDestr
     if (this.xAxisComponent) {
       this.xAxisComponent.setConfig({
         type: 'x',
+        position: Position.Bottom,
         label: this.xLabel(),
         tickFormat: this.xFormatterFn,
         gridLine: this.xGridLine(),
@@ -410,10 +415,14 @@ export class BarChartComponent<T extends Record<string, any>> implements OnDestr
       });
     }
 
-    // Update container
+    // Update container (Unovis expects a full config; otherwise DOM children are cleared)
     this.container.updateContainer({
       height: this.height(),
       padding: this.padding(),
+      components: this.barComponent ? [this.barComponent] : [],
+      xAxis: this.xAxisComponent ?? undefined,
+      yAxis: this.yAxisComponent ?? undefined,
+      tooltip: this.tooltip ?? undefined,
     });
 
     this.container.setData(data);

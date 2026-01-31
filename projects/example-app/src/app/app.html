@@ -1,138 +1,42 @@
-<div style="padding: 2rem; background-color: #f5f5f5;">
-  <h1 style="margin-bottom: 2rem;">Angular Charts Demo</h1>
-  
-  <div style="background: white; padding: 1.5rem; margin-bottom: 2rem; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-    <h2 style="margin-bottom: 1rem;">Line Chart</h2>
-    <ngx-line-chart 
-      [data]="data" 
-      [categories]="areaCategories"
-      [height]="300"
-      [xFormatter]="formatX"
-      xLabel="Month"
-      yLabel="Value"
-      [curveType]="CurveType.MonotoneX"
-      [xGridLine]="true"
-      [yGridLine]="true"
-    ></ngx-line-chart>
-  </div>
+<div style="display: flex; height: 100vh; background-color: #f5f5f5; font-family: sans-serif;">
+  <!-- Sidebar -->
+  <aside style="width: 250px; background: #1f2937; color: white; padding: 2rem 0;">
+    <h1 style="padding: 0 2rem; margin-bottom: 2rem; font-size: 1.5rem; font-weight: bold;">{{title()}}</h1>
+    
+    <nav>
+      <ul style="list-style: none; padding: 0; margin: 0;">
+        <li>
+          <a routerLink="/line" routerLinkActive="active" style="display: block; padding: 0.75rem 2rem; color: #e5e7eb; text-decoration: none; border-left: 4px solid transparent;">Line Chart</a>
+        </li>
+        <li>
+          <a routerLink="/area" routerLinkActive="active" style="display: block; padding: 0.75rem 2rem; color: #e5e7eb; text-decoration: none; border-left: 4px solid transparent;">Area Chart</a>
+        </li>
+        <li>
+          <a routerLink="/bar" routerLinkActive="active" style="display: block; padding: 0.75rem 2rem; color: #e5e7eb; text-decoration: none; border-left: 4px solid transparent;">Bar Chart</a>
+        </li>
+        <li>
+          <a routerLink="/donut" routerLinkActive="active" style="display: block; padding: 0.75rem 2rem; color: #e5e7eb; text-decoration: none; border-left: 4px solid transparent;">Donut Chart</a>
+        </li>
+        <li>
+          <a routerLink="/bubble" routerLinkActive="active" style="display: block; padding: 0.75rem 2rem; color: #e5e7eb; text-decoration: none; border-left: 4px solid transparent;">Bubble Chart</a>
+        </li>
+        <li>
+          <a routerLink="/gantt" routerLinkActive="active" style="display: block; padding: 0.75rem 2rem; color: #e5e7eb; text-decoration: none; border-left: 4px solid transparent;">Gantt Chart</a>
+        </li>
+      </ul>
+    </nav>
+  </aside>
 
-  <div style="background: white; padding: 1.5rem; margin-bottom: 2rem; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-    <h2 style="margin-bottom: 1rem;">Area Chart - Overlapping</h2>
-    <ngx-area-chart 
-      [data]="data" 
-      [categories]="areaCategories"
-      [height]="300"
-      [xFormatter]="formatX"
-      xLabel="Month"
-      yLabel="Value"
-      [curveType]="CurveType.MonotoneX"
-      [xGridLine]="true"
-      [yGridLine]="true"
-      [legendPosition]="LegendPosition.TopCenter"
-      (click)="handleChartClick($event)"
-    ></ngx-area-chart>
-  </div>
-
-  <div style="background: white; padding: 1.5rem; margin-bottom: 2rem; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-    <h2 style="margin-bottom: 1rem;">Area Chart - Stacked</h2>
-    <ngx-area-chart 
-      [data]="stackedData" 
-      [categories]="areaCategories"
-      [height]="300"
-      [xFormatter]="formatX"
-      xLabel="Month"
-      yLabel="Total Value"
-      [stacked]="true"
-      [curveType]="CurveType.MonotoneX"
-      [xGridLine]="false"
-      [yGridLine]="true"
-      (click)="handleChartClick($event)"
-    ></ngx-area-chart>
-  </div>
-
-  <div style="background: white; padding: 1.5rem; margin-bottom: 2rem; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-    <h2 style="margin-bottom: 1rem;">Bar Chart - Grouped</h2>
-    <ngx-bar-chart 
-      [data]="data" 
-      [categories]="areaCategories"
-      [yAxis]="['sales', 'profit']"
-      [height]="300"
-      [xFormatter]="formatX"
-      xLabel="Month"
-      yLabel="Value"
-      [yGridLine]="true"
-      [radius]="4"
-    ></ngx-bar-chart>
-  </div>
-
-  <div style="background: white; padding: 1.5rem; margin-bottom: 2rem; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-    <h2 style="margin-bottom: 1rem;">Bar Chart - Stacked</h2>
-    <ngx-bar-chart 
-      [data]="stackedData" 
-      [categories]="areaCategories"
-      [orientation]="Orientation.Horizontal"
-      [yAxis]="['sales', 'profit']"
-      [height]="300"
-      [xFormatter]="formatX"
-      xLabel="Month"
-      yLabel="Total Value"
-      [stacked]="true"
-      [yGridLine]="true"
-      [radius]="4"
-    ></ngx-bar-chart>
-  </div>
-
-  <div style="background: white; padding: 1.5rem; margin-bottom: 2rem; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-    <h2 style="margin-bottom: 1rem;">Donut Chart - Full</h2>
-    <ngx-donut-chart 
-      [data]="donutData" 
-      [categories]="donutCategories"
-      [height]="300"
-      [radius]="5"
-      [arcWidth]="40"
-    ></ngx-donut-chart>
-  </div>
-
-  <div style="background: white; padding: 1.5rem; margin-bottom: 2rem; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-    <h2 style="margin-bottom: 1rem;">Donut Chart - Half</h2>
-    <ngx-donut-chart 
-      [data]="donutData" 
-      [categories]="donutCategories"
-      [height]="200"
-      [radius]="5"
-      [arcWidth]="40"
-      [type]="DonutType.Half"
-    ></ngx-donut-chart>
-  </div>
-
-  <div style="background: white; padding: 1.5rem; margin-bottom: 2rem; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-    <h2 style="margin-bottom: 1rem;">Bubble Chart</h2>
-    <ngx-bubble-chart 
-      [data]="bubbleData" 
-      [categories]="bubbleCategories"
-      categoryKey="category"
-      [height]="300"
-      [xAccessor]="xAccessor"
-      [yAccessor]="yAccessor"
-      [sizeAccessor]="sizeAccessor"
-      xLabel="X Value"
-      yLabel="Y Value"
-      [xGridLine]="true"
-      [yGridLine]="true"
-    ></ngx-bubble-chart>
-  </div>
-
-  <div style="background: white; padding: 1.5rem; margin-bottom: 2rem; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-    <h2 style="margin-bottom: 1rem;">Gantt Chart</h2>
-    <ngx-gantt-chart 
-      [data]="ganttData" 
-      [categories]="ganttCategories"
-      [height]="200"
-      [x]="ganttX"
-      [length]="ganttLength"
-      [type]="ganttType"
-      [lineWidth]="20"
-      [rowHeight]="40"
-    ></ngx-gantt-chart>
-  </div>
+  <!-- Main Content -->
+  <main style="flex: 1; overflow-y: auto; padding: 2rem;">
+    <router-outlet></router-outlet>
+  </main>
 </div>
+
+<style>
+  .active {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-left-color: #3b82f6 !important;
+    color: white !important;
+  }
+</style>

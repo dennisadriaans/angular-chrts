@@ -15,7 +15,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
-import { XYContainer, Timeline, Axis, Tooltip, BulletLegend } from '@unovis/ts';
+import { XYContainer, Timeline, Axis, Tooltip, BulletLegend, Position } from '@unovis/ts';
 import { LegendPosition, BulletLegendItemInterface } from '../types/index';
 import { TooltipComponent } from '../tooltip/index';
 import { isBrowser } from '../utils/index';
@@ -240,6 +240,7 @@ export class GanttChartComponent<T extends Record<string, any>> implements OnDes
     // Create axis
     this.xAxisComponent = new Axis<T>({
       type: 'x',
+      position: Position.Bottom,
       tickFormat: this.tickFormatFn,
       numTicks: this.xNumTicks(),
       tickLine: this.xTickLine(),
@@ -256,15 +257,20 @@ export class GanttChartComponent<T extends Record<string, any>> implements OnDes
       });
     }
 
-    // Collect all components
-    const components = [this.timeline, this.xAxisComponent];
+    // Collect drawable components (axis is managed by XYContainer)
+    const components = [this.timeline];
 
     // Create container
-    this.container = new XYContainer<T>(element, {
-      height: this.height(),
-      components,
-      tooltip: this.tooltip ?? undefined,
-    }, data);
+    this.container = new XYContainer<T>(
+      element,
+      {
+        height: this.height(),
+        components,
+        xAxis: this.xAxisComponent,
+        tooltip: this.tooltip ?? undefined,
+      },
+      data,
+    );
   }
 
   private updateChart(data: T[]): void {
@@ -288,6 +294,7 @@ export class GanttChartComponent<T extends Record<string, any>> implements OnDes
     if (this.xAxisComponent) {
       this.xAxisComponent.setConfig({
         type: 'x',
+        position: Position.Bottom,
         tickFormat: this.tickFormatFn,
         numTicks: this.xNumTicks(),
         tickLine: this.xTickLine(),
@@ -296,9 +303,12 @@ export class GanttChartComponent<T extends Record<string, any>> implements OnDes
       });
     }
 
-    // Update container
+    // Update container (Unovis expects a full config; otherwise DOM children are cleared)
     this.container.updateContainer({
       height: this.height(),
+      components: this.timeline ? [this.timeline] : [],
+      xAxis: this.xAxisComponent ?? undefined,
+      tooltip: this.tooltip ?? undefined,
     });
 
     this.container.setData(data);
