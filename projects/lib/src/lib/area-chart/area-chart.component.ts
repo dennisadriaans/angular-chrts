@@ -30,7 +30,7 @@ import { BulletLegendItemInterface, LegendPosition } from '../types/legend';
 import { MarkerConfig } from '../types/common';
 import { AxisFormatter as axisFormatter } from '../types/axis';
 import { TooltipComponent } from '../tooltip/tooltip.component';
-import { createMarkers } from '../utils';
+import { createMarkers } from '../utils/index';
 
 @Component({
   selector: 'ngx-area-chart',

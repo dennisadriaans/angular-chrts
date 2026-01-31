@@ -24,8 +24,8 @@ import {
   Position,
   type NumericAccessor,
 } from '@unovis/ts';
-import { LegendPosition, BulletLegendItemInterface, AxisConfig, CrosshairConfig } from '../types';
-import { TooltipComponent } from '../tooltip';
+import { LegendPosition, BulletLegendItemInterface, AxisConfig, CrosshairConfig } from '../types/index';
+import { TooltipComponent } from '../tooltip/index';
 
 @Component({
   selector: 'ngx-bubble-chart',

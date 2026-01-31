@@ -16,9 +16,9 @@ import {
 } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { XYContainer, Timeline, Axis, Tooltip, BulletLegend } from '@unovis/ts';
-import { LegendPosition, BulletLegendItemInterface } from '../types';
-import { TooltipComponent } from '../tooltip';
-import { isBrowser } from '../utils';
+import { LegendPosition, BulletLegendItemInterface } from '../types/index';
+import { TooltipComponent } from '../tooltip/index';
+import { isBrowser } from '../utils/index';
 
 // Cached date formatter instance for better performance (SSR-safe)
 const getDateFormatter = () => {

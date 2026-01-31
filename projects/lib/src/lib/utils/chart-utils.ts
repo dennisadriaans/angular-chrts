@@ -1,4 +1,4 @@
-import { MarkerConfig } from '../types';
+import { MarkerConfig } from '../types/index';
 
 export function getDistributedIndices(length: number, numTicks: number) {
   // Handle edge cases

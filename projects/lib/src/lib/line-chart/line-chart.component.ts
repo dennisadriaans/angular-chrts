@@ -6,8 +6,8 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { CurveType } from '@unovis/ts';
-import { AreaChartComponent } from '../area-chart';
-import { LegendPosition, axisFormatter, AxisConfig, MarkerConfig, BulletLegendItemInterface } from '../types';
+import { AreaChartComponent } from '../area-chart/index';
+import { LegendPosition, axisFormatter, AxisConfig, MarkerConfig, BulletLegendItemInterface } from '../types/index';
 
 @Component({
   selector: 'ngx-line-chart',

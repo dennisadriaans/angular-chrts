@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, input } from '@angular/co
 import { CommonModule } from '@angular/common';
 import { BulletLegendItemInterface } from '../types/legend';
 import { AxisFormatter as axisFormatter } from '../types/axis';
-import { getFirstPropertyValue } from '../utils';
+import { getFirstPropertyValue } from '../utils/index';
 
 @Component({
   selector: 'ngx-tooltip',
