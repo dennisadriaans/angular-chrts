@@ -5,6 +5,7 @@
 
 **Angular Charts** is a high-performance, developer-friendly data visualization library for modern Angular applications. Based on [Unovis](https://unovis.dev/), it provides a suite of pre-built, Signals-powered components that make creating beautiful, responsive charts effortless.
 
+
 ## 📖 Resources
 
 - [**Website**](https://nuxtcharts.com/)
@@ -88,6 +89,7 @@ Angular Charts icons support extensive styling through inputs and global CSS var
 - Axis formatting and labels
 - Tooltip content and styling
 - Legend positioning (Top, Bottom, Left, Right)
+- 
 
 ## Development
 
@@ -103,6 +105,17 @@ ng serve
 # Build the library
 ng build lib
 ```
+
+## Support
+
+<div style="display: flex; align-items: center; gap: 20px;">
+  <a href="https://analogjs.org/">
+    <img src="https://analogjs.org/img/logos/analog-logo.svg" alt="Analog" width="60" height="60">
+  </a>
+  <a href="https://spartan.ng/">
+    <img src="https://raw.githubusercontent.com/spartan-ng/spartan/main/spartan.svg" alt="spartan logo" width="90" height="90">
+  </a>
+</div>
 
 ## License
 
