@@ -12,35 +12,29 @@ import type { GradientStop } from '../types';
 
 /**
  * Generates a gradient ID from index and color.
+ * Sanitizes the color string to ensure a valid SVG ID.
  *
  * @param index - The series index
- * @param color - The color value (hex or CSS variable)
+ * @param color - The color value (hex, rgb, or CSS variable)
  * @returns A unique gradient ID string
- *
- * @example
- * ```typescript
- * const id = getGradientId(0, '#3b82f6');
- * // Returns: 'gradient-0-3b82f6'
- * ```
  */
 export function getGradientId(index: number, color: string): string {
-  return `gradient-${index}-${color.replace(/#/g, '')}`;
+  // Remove special characters that might be invalid in an ID or URL reference
+  const sanitizedColor = color
+    .replace(/#/g, '')
+    .replace(/[()]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/,/g, '-');
+  return `gradient-${index}-${sanitizedColor}`;
 }
 
 /**
  * Generates SVG linear gradient definitions for area fills.
+ * Uses explicit x1, y1, x2, y2 coordinates for vertical orientation.
  *
  * @param colors - Array of colors for each series
  * @param stops - Array of gradient stop configurations
  * @returns SVG defs string containing all gradient definitions
- *
- * @example
- * ```typescript
- * const defs = generateGradientDefs(
- *   ['#3b82f6', '#ef4444'],
- *   [{ offset: '0%', stopOpacity: 1 }, { offset: '75%', stopOpacity: 0 }]
- * );
- * ```
  */
 export function generateGradientDefs(
   colors: string[],
@@ -53,12 +47,7 @@ export function generateGradientDefs(
         .map((stop) => `<stop offset="${stop.offset}" stop-color="${color}" stop-opacity="${stop.stopOpacity}" />`)
         .join('');
       
-      return `
-        <linearGradient id="${id}" gradientTransform="rotate(90)">
-          ${stopElements}
-          <stop offset="100%" stop-color="${color}" stop-opacity="0" />
-        </linearGradient>
-      `;
+      return `<linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1">${stopElements}</linearGradient>`;
     })
     .join('');
 }
@@ -79,7 +68,7 @@ export function generateGradientDefs(
  * ```
  */
 export function generateMarkerCssVars(
-  config: { id: string; config: Record<string, unknown> } | undefined
+  config: { id: string; config: Record<string, any> } | undefined
 ): Record<string, string> {
   if (!config?.config) return {};
 

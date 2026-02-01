@@ -80,7 +80,7 @@ import {
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class GanttChartComponent<T extends Record<string, unknown>> implements OnDestroy {
+export class GanttChartComponent<T extends Record<string, any>> implements OnDestroy {
   // ─────────────────────────────────────────────────────────────────────────────
   // Inputs
   // ─────────────────────────────────────────────────────────────────────────────

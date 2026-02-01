@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { BarChartComponent, Orientation } from 'angular-chrts';
-import { data, stackedData, areaCategories, formatX } from '../data';
+import { data, stackedData, areaCategories, formatX, formatStackedX } from '../data';
 
 @Component({
   selector: 'app-bar-chart-page',
@@ -30,8 +30,8 @@ import { data, stackedData, areaCategories, formatX } from '../data';
         [orientation]="Orientation.Horizontal"
         [yAxis]="['sales', 'profit']"
         [height]="400"
-        [xFormatter]="formatX"
-        xLabel="Month"
+        [xFormatter]="formatStackedX"
+        xLabel="Day"
         yLabel="Total Value"
         [stacked]="true"
         [yGridLine]="true"
@@ -46,4 +46,5 @@ export class BarChartPageComponent {
   protected readonly areaCategories = areaCategories;
   protected readonly Orientation = Orientation;
   protected readonly formatX = formatX;
+  protected readonly formatStackedX = formatStackedX;
 }

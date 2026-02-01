@@ -56,7 +56,7 @@ const STYLES = createTooltipStyles();
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class TooltipComponent<T extends Record<string, unknown>> {
+export class TooltipComponent<T extends Record<string, any>> {
   // ─────────────────────────────────────────────────────────────────────────────
   // Inputs
   // ─────────────────────────────────────────────────────────────────────────────

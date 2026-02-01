@@ -1,4 +1,5 @@
 /* You can add global styes to this file, and also import other style files */
 :root {
     --vis-tooltip-padding: 0 !important;
+    --test-color: red;
 }

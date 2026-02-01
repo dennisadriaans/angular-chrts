@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { AreaChartComponent, CurveType, LegendPosition } from 'angular-chrts';
-import { data, stackedData, areaCategories, formatX, ChartData } from '../data';
+import { data, stackedData, areaCategories, formatX, formatStackedX, ChartData } from '../data';
 
 @Component({
   selector: 'app-area-chart-page',
@@ -19,6 +19,7 @@ import { data, stackedData, areaCategories, formatX, ChartData } from '../data';
         [curveType]="CurveType.MonotoneX"
         [xGridLine]="true"
         [yGridLine]="true"
+        [stacked]="false"
         [legendPosition]="LegendPosition.BottomCenter"
         (click)="handleChartClick($event)"
       ></ngx-area-chart>
@@ -30,12 +31,12 @@ import { data, stackedData, areaCategories, formatX, ChartData } from '../data';
         [data]="stackedData" 
         [categories]="areaCategories"
         [height]="400"
-        [xFormatter]="formatX"
-        xLabel="Month"
+        [xFormatter]="formatStackedX"
+        xLabel="Day"
         yLabel="Total Value"
         [stacked]="true"
         [curveType]="CurveType.MonotoneX"
-        [xGridLine]="false"
+        [xGridLine]="true"
         [yGridLine]="true"
         (click)="handleChartClick($event)"
       ></ngx-area-chart>
@@ -49,6 +50,8 @@ export class AreaChartPageComponent {
   protected readonly CurveType = CurveType;
   protected readonly LegendPosition = LegendPosition;
   protected readonly formatX = formatX;
+  protected readonly formatStackedX = formatStackedX;
+
 
   handleChartClick(event: { event: MouseEvent; values?: ChartData }): void {
     console.log('Chart clicked:', event);

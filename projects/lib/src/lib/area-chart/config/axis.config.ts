@@ -26,7 +26,7 @@ import type { XAxisConfigOptions, YAxisConfigOptions } from '../types';
  * });
  * ```
  */
-export function buildXAxisConfig(options: XAxisConfigOptions): Record<string, unknown> {
+export function buildXAxisConfig(options: XAxisConfigOptions): Record<string, any> {
   return {
     type: 'x',
     position: Position.Bottom,
@@ -57,7 +57,7 @@ export function buildXAxisConfig(options: XAxisConfigOptions): Record<string, un
  * });
  * ```
  */
-export function buildYAxisConfig(options: YAxisConfigOptions): Record<string, unknown> {
+export function buildYAxisConfig(options: YAxisConfigOptions): Record<string, any> {
   return {
     type: 'y',
     label: options.label,

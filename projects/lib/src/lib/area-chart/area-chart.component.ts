@@ -33,6 +33,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import {
   XYContainer,
   Area,
@@ -155,7 +156,7 @@ export class AreaChartComponent<T extends Record<string, any>> implements OnDest
   /** Gradient stop configuration for area charts. */
   readonly gradientStops = input<GradientStop[]>([
     { offset: '0%', stopOpacity: 1 },
-    { offset: '75%', stopOpacity: 0 },
+    { offset: '100%', stopOpacity: 0 },
   ]);
 
   // ===== AXIS CONFIGURATION =====
@@ -243,6 +244,7 @@ export class AreaChartComponent<T extends Record<string, any>> implements OnDest
   private readonly platformId = inject(PLATFORM_ID);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly sanitizer = inject(DomSanitizer);
 
   // ===== TEMPLATE REFS =====
   readonly chartContainer = viewChild<ElementRef<HTMLDivElement>>('chartContainer');
@@ -291,14 +293,15 @@ export class AreaChartComponent<T extends Record<string, any>> implements OnDest
     hideTooltip: this.hideTooltip(),
   }));
 
-  readonly svgDefs = computed(() =>
-    generateGradientDefs(this.colors(), this.gradientStops())
-  );
+  readonly svgDefs = computed(() => {
+    const defs = generateGradientDefs(this.colors(), this.gradientStops());
+    return this.sanitizer.bypassSecurityTrustHtml(defs);
+  });
 
   readonly markerSvgDefs = computed(() => {
     const config = this.markerConfig();
-    if (!config?.config) return '';
-    return createMarkers(config);
+    if (!config?.config) return this.sanitizer.bypassSecurityTrustHtml('');
+    return this.sanitizer.bypassSecurityTrustHtml(createMarkers(config));
   });
 
   readonly markerCssVars = computed(() => generateMarkerCssVars(this.markerConfig()));
@@ -457,12 +460,14 @@ export class AreaChartComponent<T extends Record<string, any>> implements OnDest
 
   private createStackedComponents(): void {
     const keys = this.categoryKeys();
+    const series = this.series();
+    const gradientColors = series.map(s => `url(#${s.gradientId})`);
     const colors = this.colors();
     const yAccessors = createStackedYAccessors<T>(keys);
     const lineYAccessors = createCumulativeYAccessors<T>(keys);
     const styleParams = this.getStyleParams();
 
-    const areaConfig = buildAreaConfig<T>({ y: yAccessors, color: colors }, styleParams);
+    const areaConfig = buildAreaConfig<T>({ y: yAccessors, color: gradientColors }, styleParams);
     this.areas.push(new Area<T>(areaConfig));
 
     const lineConfig = buildLineConfig<T>(
@@ -519,12 +524,14 @@ export class AreaChartComponent<T extends Record<string, any>> implements OnDest
 
   private updateStackedComponents(): void {
     const keys = this.categoryKeys();
+    const series = this.series();
+    const gradientColors = series.map(s => `url(#${s.gradientId})`);
     const colors = this.colors();
     const yAccessors = createStackedYAccessors<T>(keys);
     const lineYAccessors = createCumulativeYAccessors<T>(keys);
     const styleParams = this.getStyleParams();
 
-    const areaConfig = buildAreaConfig<T>({ y: yAccessors, color: colors }, styleParams);
+    const areaConfig = buildAreaConfig<T>({ y: yAccessors, color: gradientColors }, styleParams);
     this.areas[0]?.setConfig(areaConfig);
 
     const lineConfig = buildLineConfig<T>(

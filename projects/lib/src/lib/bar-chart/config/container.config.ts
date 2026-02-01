@@ -27,7 +27,7 @@ export interface BarContainerConfigOptions<T> {
  * @param options - Container configuration options
  * @returns Complete container configuration object
  */
-export function buildBarContainerConfig<T>(options: BarContainerConfigOptions<T>): Record<string, unknown> {
+export function buildBarContainerConfig<T>(options: BarContainerConfigOptions<T>): Record<string, any> {
   return {
     height: options.height,
     padding: options.padding,

@@ -17,7 +17,7 @@ import type { BarXAxisConfigOptions, BarYAxisConfigOptions } from '../types';
  * @param options - X-axis configuration options
  * @returns Complete X-Axis configuration object
  */
-export function buildBarXAxisConfig(options: BarXAxisConfigOptions): Record<string, unknown> {
+export function buildBarXAxisConfig(options: BarXAxisConfigOptions): Record<string, any> {
   return {
     type: 'x',
     position: Position.Bottom,
@@ -38,7 +38,7 @@ export function buildBarXAxisConfig(options: BarXAxisConfigOptions): Record<stri
  * @param options - Y-axis configuration options
  * @returns Complete Y-Axis configuration object
  */
-export function buildBarYAxisConfig(options: BarYAxisConfigOptions): Record<string, unknown> {
+export function buildBarYAxisConfig(options: BarYAxisConfigOptions): Record<string, any> {
   // In horizontal mode, disable Y grid lines
   const gridLine = options.orientation !== Orientation.Horizontal && options.gridLine;
 

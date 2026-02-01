@@ -24,7 +24,7 @@ import type { NumericAccessor } from '@unovis/ts';
  * // accessors[1](data) returns data.value2
  * ```
  */
-export function createYAccessors<T extends Record<string, unknown>>(
+export function createYAccessors<T extends Record<string, any>>(
   keys: Array<keyof T>
 ): NumericAccessor<T>[] {
   return keys.map((key) => (d: T) => d[key] as number);
@@ -37,7 +37,7 @@ export function createYAccessors<T extends Record<string, unknown>>(
  * @param keys - Array of data property keys
  * @returns Array of accessor functions
  */
-export function createStackedYAccessors<T extends Record<string, unknown>>(
+export function createStackedYAccessors<T extends Record<string, any>>(
   keys: string[]
 ): Array<(d: T) => number> {
   return keys.map((key) => (d: T) => Number(d[key]));
@@ -58,7 +58,7 @@ export function createStackedYAccessors<T extends Record<string, unknown>>(
  * // accessors[2](data) returns data.value1 + data.value2 + data.value3
  * ```
  */
-export function createCumulativeYAccessors<T extends Record<string, unknown>>(
+export function createCumulativeYAccessors<T extends Record<string, any>>(
   keys: string[]
 ): Array<(d: T) => number> {
   return keys.map((_, index) => (d: T) => {
@@ -76,7 +76,7 @@ export function createCumulativeYAccessors<T extends Record<string, unknown>>(
  * @param key - The data property key
  * @returns Accessor function
  */
-export function createYAccessor<T extends Record<string, unknown>>(
+export function createYAccessor<T extends Record<string, any>>(
   key: string
 ): (d: T) => number {
   return (d: T) => Number(d[key]);

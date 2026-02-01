@@ -16,7 +16,7 @@ import type { GanttStructuralSignature } from '../types';
  * @returns Structural signature object
  */
 export function createGanttStructuralSignature(
-  categories: Record<string, unknown>,
+  categories: Record<string, any>,
   hideTooltip: boolean,
   hideLegend: boolean
 ): GanttStructuralSignature {

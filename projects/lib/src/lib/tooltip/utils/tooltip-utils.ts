@@ -19,7 +19,7 @@ export { getCategoryColor } from '../../utils/shared';
  * @param categories - Category configuration object
  * @returns Array of visible entries
  */
-export function extractVisibleEntries<T extends Record<string, unknown>>(
+export function extractVisibleEntries<T extends Record<string, any>>(
   data: T | null | undefined,
   categories: Record<string, BulletLegendItemInterface>
 ): TooltipEntry[] {

@@ -24,7 +24,7 @@ export interface BaseStructuralSignature {
  * @returns Sorted, comma-separated key string
  */
 export function createCategoryKeySignature(
-  categories: Record<string, unknown>
+  categories: Record<string, any>
 ): string {
   return Object.keys(categories).sort().join(',');
 }

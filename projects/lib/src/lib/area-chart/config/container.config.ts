@@ -42,7 +42,7 @@ export interface ContainerConfigOptions<T> {
  * });
  * ```
  */
-export function buildContainerConfig<T>(options: ContainerConfigOptions<T>): Record<string, unknown> {
+export function buildContainerConfig<T>(options: ContainerConfigOptions<T>): Record<string, any> {
   return {
     height: options.height,
     padding: options.padding,
