@@ -336,7 +336,7 @@ readonly yAxisConfig = input<AxisInputConfig>({
 // Chart appearance
 readonly appearance = input<AppearanceConfig>({
   height: 400,
-  padding: { top: 5, right: 5, bottom: 30, left: 40 },
+  padding: { top: 5, right: 5, bottom: 5, left: 5 },
   curveType: undefined,
   lineWidth: 2,
   // ...

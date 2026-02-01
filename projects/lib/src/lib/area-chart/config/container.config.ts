@@ -35,7 +35,7 @@ export interface ContainerConfigOptions<T> {
  * ```typescript
  * const config = buildContainerConfig({
  *   height: 400,
- *   padding: { top: 5, right: 5, bottom: 30, left: 40 },
+ *   padding: { top: 5, right: 5, bottom: 5, left: 5 },
  *   components: [...areas, ...lines],
  *   xAxis: xAxisInstance,
  *   yAxis: yAxisInstance,

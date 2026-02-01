@@ -122,8 +122,8 @@ export class BarChartComponent<T extends Record<string, any>> implements OnDestr
   readonly padding = input<{ top: number; right: number; bottom: number; left: number }>({
     top: 5,
     right: 5,
-    bottom: 30,
-    left: 40,
+    bottom: 5,
+    left: 5,
   });
 
   /** Whether to stack the bars on top of each other. */

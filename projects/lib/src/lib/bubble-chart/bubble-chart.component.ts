@@ -77,8 +77,8 @@ export class BubbleChartComponent<T extends Record<string, any>> implements OnDe
   readonly padding = input<{ top: number; right: number; bottom: number; left: number }>({
     top: 5,
     right: 5,
-    bottom: 30,
-    left: 40,
+    bottom: 5,
+    left: 5,
   });
 
   /** Configuration for each category mapping to the bubbles. Keyed by category property name. */
