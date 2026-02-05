@@ -10,6 +10,7 @@
 
 - [**Website**](https://nuxtcharts.com/)
 - [**Documentation**](https://nuxtcharts.com/docs)
+- [**Accessibility Guide**](./ACCESSIBILITY.md) - WCAG 2.1 AA compliance guide
 
 ## Why Choose Angular Charts?
 
