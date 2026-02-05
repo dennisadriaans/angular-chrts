@@ -74,6 +74,10 @@ import { hasSignatureChanged } from './state';
   template: `
     <div
       class="ngx-area-chart-wrapper"
+      role="img"
+      [attr.aria-label]="ariaLabel() || (hideArea() ? 'Line chart' : 'Area chart')"
+      [attr.aria-describedby]="ariaDescribedBy()"
+      tabindex="0"
       [style.display]="'flex'"
       [style.flexDirection]="isLegendTop() ? 'column-reverse' : 'column'"
       [style.gap]="'var(--vis-legend-spacing, 8px)'"
@@ -88,19 +92,21 @@ import { hasSignatureChanged } from './state';
       </svg>
 
       <!-- Chart container managed by unovis/ts -->
-      <div #chartContainer class="ngx-area-chart-container"></div>
+      <div #chartContainer class="ngx-area-chart-container" aria-hidden="true"></div>
 
       @if (!hideLegend()) {
         <div
           #legendContainer
           class="ngx-area-chart-legend"
+          role="list"
+          aria-label="Chart legend"
           [style.display]="'flex'"
           [style.justifyContent]="legendAlignment()"
         ></div>
       }
 
       <!-- Hidden tooltip template -->
-      <div #tooltipWrapper style="display: none">
+      <div #tooltipWrapper style="display: none" role="tooltip">
         @if (hoverValues()) {
           <ngx-tooltip
             [data]="hoverValues()!"
@@ -235,6 +241,13 @@ export class AreaChartComponent<T extends Record<string, any>> implements OnDest
 
   /** Custom styles for the legend. */
   readonly legendStyle = input<Record<string, string>>();
+
+  // ===== ACCESSIBILITY =====
+  /** Accessible label for the chart. Provides a description for screen readers. */
+  readonly ariaLabel = input<string>();
+
+  /** ID of element that describes this chart for screen readers. */
+  readonly ariaDescribedBy = input<string>();
 
   // ===== OUTPUTS =====
   /** Event emitted when the chart or a segment is clicked. */

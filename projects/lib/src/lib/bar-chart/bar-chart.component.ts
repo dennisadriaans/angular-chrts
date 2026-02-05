@@ -71,25 +71,31 @@ import { hasBarSignatureChanged } from './state';
   template: `
     <div
       class="ngx-bar-chart-wrapper"
+      role="img"
+      [attr.aria-label]="ariaLabel() || 'Bar chart'"
+      [attr.aria-describedby]="ariaDescribedBy()"
+      tabindex="0"
       [style.display]="'flex'"
       [style.flexDirection]="isLegendTop() ? 'column-reverse' : 'column'"
       [style.gap]="'var(--vis-legend-spacing, 8px)'"
       (click)="onClick($event)"
     >
       <!-- Chart container managed by unovis/ts -->
-      <div #chartContainer class="ngx-bar-chart-container"></div>
+      <div #chartContainer class="ngx-bar-chart-container" aria-hidden="true"></div>
 
       @if (!hideLegend()) {
         <div
           #legendContainer
           class="ngx-bar-chart-legend"
+          role="list"
+          aria-label="Chart legend"
           [style.display]="'flex'"
           [style.justifyContent]="legendAlignment()"
         ></div>
       }
 
       <!-- Hidden tooltip template -->
-      <div #tooltipWrapper style="display: none">
+      <div #tooltipWrapper style="display: none" role="tooltip">
         @if (hoverValues()) {
           <ngx-tooltip
             [data]="hoverValues()!"
@@ -218,6 +224,13 @@ export class BarChartComponent<T extends Record<string, any>> implements OnDestr
 
   /** Advanced configuration for the Y axis. */
   readonly yAxisConfig = input<AxisConfig>();
+
+  // ===== ACCESSIBILITY =====
+  /** Accessible label for the chart. Provides a description for screen readers. */
+  readonly ariaLabel = input<string>();
+
+  /** ID of element that describes this chart for screen readers. */
+  readonly ariaDescribedBy = input<string>();
 
   // ===== OUTPUTS =====
   /** Event emitted when a bar is clicked. */

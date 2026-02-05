@@ -34,25 +34,31 @@ import { TooltipComponent } from '../tooltip/index';
   template: `
     <div
       class="ngx-bubble-chart-wrapper"
+      role="img"
+      [attr.aria-label]="ariaLabel() || 'Bubble chart'"
+      [attr.aria-describedby]="ariaDescribedBy()"
+      tabindex="0"
       [style.display]="'flex'"
       [style.flexDirection]="isLegendTop() ? 'column-reverse' : 'column'"
       [style.gap]="'var(--vis-legend-spacing, 8px)'"
       (click)="onClick($event)"
     >
       <!-- Chart container managed by unovis/ts -->
-      <div #chartContainer class="ngx-bubble-chart-container"></div>
+      <div #chartContainer class="ngx-bubble-chart-container" aria-hidden="true"></div>
 
       @if (!hideLegend()) {
         <div
           #legendContainer
           class="ngx-bubble-chart-legend"
+          role="list"
+          aria-label="Chart legend"
           [style.display]="'flex'"
           [style.justifyContent]="legendAlignment()"
         ></div>
       }
 
       <!-- Hidden tooltip template -->
-      <div #tooltipWrapper style="display: none">
+      <div #tooltipWrapper style="display: none" role="tooltip">
         @if (hoverValues()) {
           <ngx-tooltip
             [data]="hoverValues()!"
@@ -173,6 +179,13 @@ export class BubbleChartComponent<T extends Record<string, any>> implements OnDe
 
   /** Advanced configuration for the Y axis. */
   readonly yAxisConfig = input<AxisConfig>();
+
+  // ===== ACCESSIBILITY =====
+  /** Accessible label for the chart. Provides a description for screen readers. */
+  readonly ariaLabel = input<string>();
+
+  /** ID of element that describes this chart for screen readers. */
+  readonly ariaDescribedBy = input<string>();
 
   /** Event emitted when a bubble is clicked. */
   readonly click = output<{ event: MouseEvent; values?: T }>();

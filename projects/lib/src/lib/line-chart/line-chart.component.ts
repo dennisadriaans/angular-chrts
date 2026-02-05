@@ -48,6 +48,8 @@ import { LegendPosition, axisFormatter, AxisConfig, MarkerConfig, BulletLegendIt
       [markerConfig]="markerConfig()"
       [yDomain]="yDomain()"
       [xDomain]="xDomain()"
+      [ariaLabel]="ariaLabel() || 'Line chart'"
+      [ariaDescribedBy]="ariaDescribedBy()"
       (click)="click.emit($event)"
     ></ngx-area-chart>
   `,
@@ -91,6 +93,13 @@ export class LineChartComponent<T extends Record<string, any>> {
   readonly markerConfig = input<MarkerConfig>();
   readonly yDomain = input<[number, number]>();
   readonly xDomain = input<[number, number]>();
+
+  // ===== ACCESSIBILITY =====
+  /** Accessible label for the chart. Provides a description for screen readers. */
+  readonly ariaLabel = input<string>();
+
+  /** ID of element that describes this chart for screen readers. */
+  readonly ariaDescribedBy = input<string>();
 
   readonly click = output<{ event: MouseEvent; values?: T }>();
 }

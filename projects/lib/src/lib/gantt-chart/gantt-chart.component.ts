@@ -50,24 +50,30 @@ import {
   template: `
     <div
       class="ngx-gantt-chart-wrapper"
+      role="img"
+      [attr.aria-label]="ariaLabel() || 'Gantt chart'"
+      [attr.aria-describedby]="ariaDescribedBy()"
+      tabindex="0"
       [style.display]="'flex'"
       [style.flexDirection]="legendOnTop() ? 'column-reverse' : 'column'"
       [style.gap]="'var(--vis-legend-spacing, 8px)'"
     >
       <!-- Chart container managed by unovis/ts -->
-      <div #chartContainer class="ngx-gantt-chart-container" (wheel)="onScroll($event)"></div>
+      <div #chartContainer class="ngx-gantt-chart-container" aria-hidden="true" (wheel)="onScroll($event)"></div>
 
       @if (!hideLegend()) {
         <div
           #legendContainer
           class="ngx-gantt-chart-legend"
+          role="list"
+          aria-label="Chart legend"
           [style.display]="'flex'"
           [style.justifyContent]="legendAlign()"
         ></div>
       }
 
       <!-- Hidden tooltip template -->
-      <div #tooltipWrapper style="display: none">
+      <div #tooltipWrapper style="display: none" role="tooltip">
         @if (slotValue()) {
           <ngx-tooltip
             [data]="slotValue()!"
@@ -147,6 +153,16 @@ export class GanttChartComponent<T extends Record<string, any>> implements OnDes
 
   /** Formatter for the tooltip title. */
   readonly tooltipTitleFormatter = input<(data: T) => string | number>();
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Accessibility
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  /** Accessible label for the chart. Provides a description for screen readers. */
+  readonly ariaLabel = input<string>();
+
+  /** ID of element that describes this chart for screen readers. */
+  readonly ariaDescribedBy = input<string>();
 
   // ─────────────────────────────────────────────────────────────────────────────
   // Outputs
