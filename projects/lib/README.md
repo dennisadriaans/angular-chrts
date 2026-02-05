@@ -18,6 +18,7 @@ npm install angular-chrts @unovis/ts
 - **Responsive**: All charts adapt to their container size automatically
 - **Customizable**: Full control over axes, tooltips, legends, and styling
 - **Typescript Ready**: Robust types for all your data visualization needs
+- **WCAG 2.1 AA Compliant**: Built-in accessibility features for screen readers and keyboard navigation
 
 ## Quick Start
 
@@ -79,6 +80,75 @@ if (isBrowser()) {
   // Safe to access window and document
 }
 ```
+
+## Accessibility (WCAG 2.1 AA Compliance)
+
+All charts in this library are designed to meet WCAG 2.1 AA accessibility standards:
+
+### Key Accessibility Features
+
+1. **ARIA Attributes**: All charts include proper ARIA roles and labels for screen reader support
+2. **Keyboard Navigation**: Charts are keyboard-accessible with `tabindex="0"` 
+3. **Screen Reader Support**: Semantic HTML and ARIA attributes provide context to assistive technologies
+4. **Proper Labeling**: Legend items and tooltips are properly labeled for screen readers
+
+### Using Accessibility Features
+
+Each chart component accepts `ariaLabel` and `ariaDescribedBy` inputs:
+
+```typescript
+<ngx-bar-chart
+  [data]="data"
+  [categories]="categories"
+  ariaLabel="Monthly revenue comparison showing sales and profit trends"
+  ariaDescribedBy="chart-description"
+/>
+
+<p id="chart-description" class="sr-only">
+  This bar chart shows revenue data from January to December,
+  comparing sales (blue bars) and profit (green bars) metrics.
+</p>
+```
+
+### Best Practices for Accessible Charts
+
+- **Provide descriptive labels**: Use the `ariaLabel` input to describe what the chart represents
+- **Add detailed descriptions**: Use `ariaDescribedBy` to reference a more detailed text description
+- **Include axis labels**: Always provide meaningful `xLabel` and `yLabel` values
+- **Use meaningful colors**: Ensure sufficient color contrast (charts use Unovis defaults which meet WCAG AA standards)
+- **Keep legends visible**: Legends help all users, including those with color blindness
+
+Example with comprehensive accessibility:
+
+```typescript
+@Component({
+  template: `
+    <ngx-line-chart
+      [data]="salesData"
+      [categories]="categories"
+      xLabel="Month"
+      yLabel="Revenue (USD)"
+      ariaLabel="Annual sales performance chart"
+      ariaDescribedBy="sales-chart-desc"
+    />
+    <p id="sales-chart-desc" class="visually-hidden">
+      Line chart showing monthly sales from January to December 2024.
+      Sales started at $45,000 in January and increased to $62,000 by December,
+      with a peak of $68,000 in July.
+    </p>
+  `
+})
+```
+
+### Screen Reader Announcements
+
+Charts include the following ARIA attributes:
+- `role="img"` - Identifies the chart as an image for screen readers
+- `aria-label` - Provides a text label for the chart
+- `aria-describedby` - Points to a detailed description
+- `aria-hidden="true"` - Hides decorative SVG elements from screen readers
+- `role="list"` - Marks legend containers as lists
+- `role="tooltip"` - Identifies tooltip content
 
 ## Documentation
 

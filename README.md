@@ -18,6 +18,7 @@
 - 📦 **Declarative API**: Easy-to-use components that feel native to Angular.
 - 📊 **Versatile Data Visualization**: Support for Bar, Line, Area, Donut, Bubble, and Gantt charts.
 - 🛠 **Powered by Unovis**: Leverages the power of the battle-tested Unovis visualization framework for robust Angular charts.
+- ♿ **WCAG 2.1 AA Compliant**: Built-in accessibility features for screen readers and keyboard navigation.
 
 ## Installation
 
@@ -89,7 +90,32 @@ Angular Charts icons support extensive styling through inputs and global CSS var
 - Axis formatting and labels
 - Tooltip content and styling
 - Legend positioning (Top, Bottom, Left, Right)
-- 
+
+## Accessibility
+
+All charts meet **WCAG 2.1 AA accessibility standards** with built-in support for:
+- Screen readers via ARIA attributes
+- Keyboard navigation
+- Descriptive labels and semantics
+- High contrast color schemes
+
+Example:
+```typescript
+<ngx-bar-chart
+  [data]="chartData"
+  [categories]="categories"
+  ariaLabel="Monthly revenue chart showing sales trends"
+  ariaDescribedBy="revenue-description"
+/>
+
+<p id="revenue-description" class="sr-only">
+  Bar chart displaying monthly revenue from January to March,
+  with values ranging from $4,500 to $5,200.
+</p>
+```
+
+See the [library README](./projects/lib/README.md) for comprehensive accessibility documentation.
+
 
 ## Development
 
