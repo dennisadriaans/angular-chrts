@@ -20,6 +20,7 @@ import { data, stackedData, areaCategories, formatX, formatStackedX, ChartData }
         [xGridLine]="true"
         [yGridLine]="true"
         [stacked]="false"
+        [showLabels]="true"
         [legendPosition]="LegendPosition.BottomCenter"
         (click)="handleChartClick($event)"
       ></ngx-area-chart>
@@ -35,6 +36,7 @@ import { data, stackedData, areaCategories, formatX, formatStackedX, ChartData }
         xLabel="Day"
         yLabel="Total Value"
         [stacked]="true"
+        [showLabels]="true"
         [curveType]="CurveType.MonotoneX"
         [xGridLine]="true"
         [yGridLine]="true"

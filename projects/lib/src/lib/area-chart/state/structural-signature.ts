@@ -33,6 +33,7 @@ export function createStructuralSignature(params: {
   hideXAxis: boolean;
   hideYAxis: boolean;
   hideTooltip: boolean;
+  showLabels: boolean;
 }): StructuralSignature {
   return {
     stacked: params.stacked,
@@ -40,6 +41,7 @@ export function createStructuralSignature(params: {
     hideXAxis: params.hideXAxis,
     hideYAxis: params.hideYAxis,
     hideTooltip: params.hideTooltip,
+    showLabels: params.showLabels,
   };
 }
 
@@ -70,7 +72,8 @@ export function hasSignatureChanged(
     previous.categoryKeys !== current.categoryKeys ||
     previous.hideXAxis !== current.hideXAxis ||
     previous.hideYAxis !== current.hideYAxis ||
-    previous.hideTooltip !== current.hideTooltip
+    previous.hideTooltip !== current.hideTooltip ||
+    previous.showLabels !== current.showLabels
   );
 }
 
@@ -81,5 +84,5 @@ export function hasSignatureChanged(
  * @returns A unique string key
  */
 export function getSignatureKey(signature: StructuralSignature): string {
-  return `${signature.stacked}-${signature.categoryKeys}-${signature.hideXAxis}-${signature.hideYAxis}-${signature.hideTooltip}`;
+  return `${signature.stacked}-${signature.categoryKeys}-${signature.hideXAxis}-${signature.hideYAxis}-${signature.hideTooltip}-${signature.showLabels}`;
 }
