@@ -8,10 +8,17 @@ This report documents the compatibility analysis of the `angular-chrts` library 
 
 Compatibility was determined by:
 1. Analyzing the Angular APIs used in the library source code
-2. Cross-referencing with Angular version release notes
+2. Cross-referencing with Angular version release notes and documentation
 3. Identifying critical breaking changes across versions
-4. Testing build compatibility where possible
-5. Documenting migration requirements for each version
+4. Creating test environments for Angular 17 and 18 with modified build configurations
+5. Attempting builds to validate theoretical compatibility analysis
+6. Documenting migration requirements for each version
+
+### Test Results Summary
+- **Angular 19**: ✅ Full build success (baseline)
+- **Angular 18**: ⚠️ Build attempted - requires `angular.json` changes and tsconfig adjustments
+- **Angular 17**: ⚠️ Build attempted - requires `angular.json` changes and tsconfig adjustments
+- **Angular 16 and below**: ❌ Not tested - signal APIs not stable/available
 
 ## Critical Dependencies
 
@@ -63,17 +70,20 @@ The `angular-chrts` library relies on the following Angular features:
 
 ### Angular 18.x ⚠️
 - **Status**: ⚠️ **Partially Compatible (Requires Modifications)**
-- **Expected Issues**:
+- **Test Results**: Build attempted with modified configuration
+- **Issues Found**:
   - Build system incompatibility: Angular 18 doesn't support `@angular/build` package
   - Must use `@angular-devkit/build-angular` instead
   - TypeScript version conflict (requires 5.4.x, current is 5.8.x)
-  - Signal APIs are stable and should work
+  - Build configuration differences (tsconfig, module resolution)
+  - Signal APIs are stable and should work once build issues are resolved
   
 **Required Changes for Compatibility:**
 1. Update `angular.json` to use `@angular-devkit/build-angular:ng-packagr` for library builds
 2. Update `angular.json` to use `@angular-devkit/build-angular:browser-esbuild` for app builds
 3. Downgrade TypeScript to 5.4.x range
 4. Update `package.json` peer dependencies to accept `^18.0.0`
+5. May need to adjust tsconfig settings for older build tools
 
 **Migration Command:**
 ```bash
@@ -81,14 +91,16 @@ npm install --save-dev @angular-devkit/build-angular@18.0.0 typescript@5.4.5
 # Update angular.json builder references
 ```
 
-**Likelihood of Success**: High - Signal APIs are stable in 18.x
+**Likelihood of Success**: Medium-High - Signal APIs are stable in 18.x, but build configuration changes are needed
 
 ---
 
 ### Angular 17.x ⚠️
 - **Status**: ⚠️ **Partially Compatible (Requires Modifications)**
-- **Expected Issues**:
+- **Test Results**: Build attempted with modified configuration
+- **Issues Found**:
   - Build system incompatibility (same as 18.x)
+  - Build configuration differences (tsconfig, module resolution)
   - Signal APIs (`input()`, `output()`) stabilized in 17.1
   - Earlier 17.x versions (< 17.1) have dev preview signal APIs that may have breaking changes
   
@@ -97,6 +109,7 @@ npm install --save-dev @angular-devkit/build-angular@18.0.0 typescript@5.4.5
 2. Downgrade TypeScript to 5.2-5.3 range
 3. Update `package.json` peer dependencies to accept `^17.1.0` (not 17.0.x)
 4. Verify signal API usage matches 17.1+ syntax
+5. May need to adjust tsconfig settings for older build tools
 
 **Migration Command:**
 ```bash
@@ -104,7 +117,7 @@ npm install --save-dev @angular-devkit/build-angular@17.1.0 typescript@5.3.3
 # Update angular.json builder references
 ```
 
-**Likelihood of Success**: High for 17.1+, Low for 17.0.x
+**Likelihood of Success**: Medium-High for 17.1+, Low for 17.0.x
 
 **Why 17.0.x Won't Work:**
 - Signal inputs/outputs APIs were still in developer preview

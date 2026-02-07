@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 
 @Component({
   selector: 'lib-lib',
+  standalone: true,
   imports: [],
   template: `
     <p>
