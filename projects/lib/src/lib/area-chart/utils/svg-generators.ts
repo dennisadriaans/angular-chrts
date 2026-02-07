@@ -2,10 +2,6 @@
  * SVG Generators
  *
  * Pure functions for generating SVG gradient definitions.
- *
- * SOLID Principles:
- * - SRP: Only responsible for SVG generation
- * - OCP: New SVG elements can be added without modifying existing code
  */
 
 import type { GradientStop } from '../types';

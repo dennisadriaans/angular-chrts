@@ -62,6 +62,7 @@ import {
   extractBarLegendItems,
   createTickFormatter,
 } from './utils';
+import { unwrapTooltipData } from '../utils/chart-utils';
 import { hasBarSignatureChanged } from './state';
 
 @Component({
@@ -454,10 +455,11 @@ export class BarChartComponent<T extends Record<string, any>> implements OnDestr
     });
   }
 
-  private getTooltipContent(d: T): string {
-    this.hoverValues.set(d);
+  private getTooltipContent(d: any): string {
+    const data = unwrapTooltipData(d, this.data());
+    this.hoverValues.set(data);
     this.cdr.detectChanges();
-    return d ? this.tooltipWrapper()?.nativeElement.innerHTML ?? '' : '';
+    return data ? this.tooltipWrapper()?.nativeElement.innerHTML ?? '' : '';
   }
 
   // ===== CONTAINER =====
