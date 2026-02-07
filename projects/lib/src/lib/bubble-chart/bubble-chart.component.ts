@@ -26,6 +26,7 @@ import {
 } from '@unovis/ts';
 import { LegendPosition, BulletLegendItemInterface, AxisConfig, CrosshairConfig } from '../types/index';
 import { TooltipComponent } from '../tooltip/index';
+import { unwrapTooltipData } from '../utils/chart-utils';
 
 @Component({
   selector: 'ngx-bubble-chart',
@@ -428,10 +429,11 @@ export class BubbleChartComponent<T extends Record<string, any>> implements OnDe
     return Array.isArray(categoryColor) ? categoryColor[0] : categoryColor;
   }
 
-  private getTooltipContent(d: T): string {
-    this.hoverValues.set(d);
+  private getTooltipContent(d: any): string {
+    const data = unwrapTooltipData(d, this.data());
+    this.hoverValues.set(data);
     this.cdr.detectChanges();
-    return d ? this.tooltipWrapper()?.nativeElement.innerHTML ?? '' : '';
+    return data ? this.tooltipWrapper()?.nativeElement.innerHTML ?? '' : '';
   }
 
   private xFormatterFn = (tick: number | Date, i: number, ticks: (number | Date)[]): string => {

@@ -2,11 +2,6 @@
  * Bar Config Builders
  *
  * Pure functions for building Unovis bar component configurations.
- *
- * SOLID Principles:
- * - SRP: Only responsible for bar configuration
- * - OCP: New bar options can be added without modifying existing code
- * - DIP: Depends on abstractions (interfaces) not concrete implementations
  */
 
 import { Orientation } from '@unovis/ts';

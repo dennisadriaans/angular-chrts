@@ -4,9 +4,6 @@
  * A configurable tooltip component for displaying chart hover data.
  * Uses CSS custom properties for theming.
  *
- * SOLID Principles Applied:
- * - SRP: Component focuses on rendering, utilities handle data processing
- * - OCP: Extended via CSS custom properties, not modification
  */
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import type { BulletLegendItemInterface } from '../types';

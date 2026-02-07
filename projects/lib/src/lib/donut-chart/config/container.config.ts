@@ -2,9 +2,6 @@
  * Donut Container Configuration Builder
  *
  * Pure function for building SingleContainer configuration.
- *
- * SOLID Principles:
- * - SRP: Only responsible for container configuration
  */
 
 import type { SingleContainerConfigInterface } from '@unovis/ts';

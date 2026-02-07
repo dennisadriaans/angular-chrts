@@ -2,10 +2,6 @@
  * Container Config Builder
  *
  * Pure function for building Unovis XYContainer configuration.
- *
- * SOLID Principles:
- * - SRP: Only responsible for container configuration
- * - OCP: New container options can be added without modifying existing code
  */
 
 import type { Area, Line, Axis, Crosshair, Tooltip } from '@unovis/ts';

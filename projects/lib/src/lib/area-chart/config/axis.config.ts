@@ -2,10 +2,6 @@
  * Axis Config Builders
  *
  * Pure functions for building Unovis Axis configurations.
- *
- * SOLID Principles:
- * - SRP: Only responsible for axis configuration
- * - OCP: New axis options can be added without modifying existing code
  */
 
 import { Position } from '@unovis/ts';

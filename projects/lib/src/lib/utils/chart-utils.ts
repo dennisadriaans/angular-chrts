@@ -46,6 +46,29 @@ export function getFirstPropertyValue<T>(obj: Record<string, T> | null | undefin
   return undefined;
 }
 
+/**
+ * Extracts the original data record from a Unovis event.
+ * Handles single segments, arrays (for stacked components), and wrapped objects.
+ * Uses index-based lookup to decouple from internal Unovis property names like 'datum'.
+ *
+ * @param d - The data object passed by Unovis (segment, array of segments, or record)
+ * @param originalData - The source data array used by the component
+ * @returns The original record from the data array, or the object itself as a fallback
+ */
+export function unwrapTooltipData<T>(d: any, originalData?: T[]): T {
+  if (!d) return d;
+
+  // Handle array of segments (typical for stacked bar hover)
+  const segment = Array.isArray(d) ? d[0] : d;
+
+  if (originalData && typeof segment?.index === 'number') {
+    return originalData[segment.index] ?? segment;
+  }
+
+  // Fallback to commonly used Unovis properties if index lookup is not possible or safe
+  return segment?.datum ?? segment?.data ?? segment;
+}
+
 export const markerShape = (
   type: string,
   size: number,

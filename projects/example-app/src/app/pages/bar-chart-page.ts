@@ -17,6 +17,7 @@ import { data, stackedData, areaCategories, formatX, formatStackedX } from '../d
         [xFormatter]="formatX"
         xLabel="Month"
         yLabel="Value"
+        [stacked]=true
         [yGridLine]="true"
         [radius]="4"
       ></ngx-bar-chart>
