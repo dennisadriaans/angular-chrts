@@ -21,6 +21,8 @@
 
 ## Installation
 
+**Requirements**: Angular 17.1+ (see [Angular Compatibility](#angular-compatibility) for details)
+
 Install the package via npm or pnpm:
 
 ```bash
@@ -105,6 +107,21 @@ ng serve
 # Build the library
 ng build lib
 ```
+
+## Angular Compatibility
+
+This library requires **Angular 17.1 or higher** due to its use of Angular Signals.
+
+📋 **Quick Reference**: See [ANGULAR_COMPATIBILITY_QUICK.md](./ANGULAR_COMPATIBILITY_QUICK.md)
+
+📖 **Detailed Report**: See [ANGULAR_COMPATIBILITY.md](./ANGULAR_COMPATIBILITY.md)
+
+| Angular Version | Status |
+|----------------|--------|
+| 19.x | ✅ Fully Supported |
+| 18.x | ⚠️ Requires config changes |
+| 17.1+ | ⚠️ Requires config changes |
+| 16.x and below | ❌ Not supported |
 
 ## Support
 
