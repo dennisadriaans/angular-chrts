@@ -61,7 +61,6 @@ export function unwrapTooltipData<T>(d: any, originalData?: T[]): T {
   // Handle array of segments (typical for stacked bar hover)
   const segment = Array.isArray(d) ? d[0] : d;
 
-  // Prefer index-based lookup into our own data array for "100% dynamic" decoupling
   if (originalData && typeof segment?.index === 'number') {
     return originalData[segment.index] ?? segment;
   }
