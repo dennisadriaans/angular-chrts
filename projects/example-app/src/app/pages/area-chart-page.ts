@@ -23,6 +23,7 @@ import { data, stackedData, areaCategories, formatX, formatStackedX, ChartData }
         [showLabels]="true"
         [legendPosition]="LegendPosition.BottomCenter"
         (click)="handleChartClick($event)"
+        labelVerticalOffset="-12px"
       ></ngx-area-chart>
     </div>
 

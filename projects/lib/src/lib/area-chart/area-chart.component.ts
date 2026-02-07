@@ -85,7 +85,7 @@ import { hasSignatureChanged } from './state';
       [style.display]="'flex'"
       [style.flexDirection]="isLegendTop() ? 'column-reverse' : 'column'"
       [style.gap]="'var(--vis-legend-spacing, 8px)'"
-      [style]="markerCssVars()"
+      [style]="chartStyle()"
       [class.stacked-area-chart]="stacked()"
       [attr.id]="markerConfig()?.id"
       (click)="onClick($event)"
@@ -120,6 +120,17 @@ import { hasSignatureChanged } from './state';
       </div>
     </div>
   `,
+  styles: [`
+    /* 
+     * Target the text and rect elements inside the label group marked with data-ngx-label-floating.
+     * We use a data attribute selector because Unovis class names can be dynamic/hashed.
+     * ng-deep is used because these elements are appended dynamically by Unovis.
+     */
+    :host ::ng-deep [data-ngx-label-floating="true"] text,
+    :host ::ng-deep [data-ngx-label-floating="true"] rect {
+      transform: translateY(var(--ngx-label-offset, 0));
+    }
+  `],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AreaChartComponent<T extends Record<string, any>> implements OnDestroy {
@@ -159,6 +170,9 @@ export class AreaChartComponent<T extends Record<string, any>> implements OnDest
 
   /** Background color for labels. Useful for creating dot/marker effects. */
   readonly labelBackgroundColor = input<string | ((d: T) => string)>();
+
+  /** Vertical offset for labels (e.g., "-10px" to float above). */
+  readonly labelVerticalOffset = input<string>();
 
   // ===== LINE STYLING =====
   /** The type of curve to use for the lines/areas. */
@@ -328,6 +342,15 @@ export class AreaChartComponent<T extends Record<string, any>> implements OnDest
 
   readonly markerCssVars = computed(() => generateMarkerCssVars(this.markerConfig()));
 
+  readonly chartStyle = computed(() => {
+    const vars: Record<string, string> = { ...this.markerCssVars() };
+    const offset = this.labelVerticalOffset();
+    if (offset) {
+      vars['--ngx-label-offset'] = offset;
+    }
+    return vars;
+  });
+
   readonly dataIndexMap = computed(() => {
     const map = new WeakMap<any, number>();
     this.data().forEach((d, i) => map.set(d, i));
@@ -472,7 +495,7 @@ export class AreaChartComponent<T extends Record<string, any>> implements OnDest
     const styleParams = this.getStyleParams();
 
     for (const s of seriesData) {
-      const yAccessor = (d: T) => Number(d[s.key]);
+      const yAccessor = (d: T) => Number(d[s.key]) ;
 
       const areaConfig = buildAreaConfig<T>(
         { y: yAccessor, color: `url(#${s.gradientId})` },
@@ -493,6 +516,7 @@ export class AreaChartComponent<T extends Record<string, any>> implements OnDest
           color: (this.labelColor() as any) ?? s.color,
           backgroundColor: (this.labelBackgroundColor() as any),
           label: this.labelFormatter() ?? ((d: T) => String(d[s.key])),
+          yOffset: this.labelVerticalOffset(),
         });
         this.labels.push(new XYLabels<T>(labelsConfig));
       }
@@ -527,6 +551,7 @@ export class AreaChartComponent<T extends Record<string, any>> implements OnDest
           color: (this.labelColor() as any) ?? s.color,
           backgroundColor: (this.labelBackgroundColor() as any),
           label: this.labelFormatter() ?? ((d: T) => String(d[key])),
+          yOffset: this.labelVerticalOffset(),
         });
         this.labels.push(new XYLabels<T>(labelsConfig));
       }
@@ -583,6 +608,7 @@ export class AreaChartComponent<T extends Record<string, any>> implements OnDest
           color: (this.labelColor() as any) ?? s.color,
           backgroundColor: (this.labelBackgroundColor() as any),
           label: this.labelFormatter() ?? ((d: T) => String(d[s.key])),
+          yOffset: this.labelVerticalOffset(),
         });
         this.labels[index]?.setConfig(labelsConfig);
       }
@@ -616,6 +642,7 @@ export class AreaChartComponent<T extends Record<string, any>> implements OnDest
           color: (this.labelColor() as any) ?? s.color,
           backgroundColor: (this.labelBackgroundColor() as any),
           label: this.labelFormatter() ?? ((d: T) => String(d[key])),
+          yOffset: this.labelVerticalOffset(),
         });
         this.labels[i]?.setConfig(labelsConfig);
       });

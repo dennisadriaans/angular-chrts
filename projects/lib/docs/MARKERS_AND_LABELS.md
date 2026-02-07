@@ -64,6 +64,18 @@ Labels are more powerful components that can render text, shapes, or interactive
 />
 ```
 
+### Floating Labels
+You can make labels float above data points using `labelVerticalOffset`. This is useful for improving readability and avoiding overlap with lines.
+
+```html
+<ngx-area-chart
+  [data]="data"
+  [categories]="categories"
+  [showLabels]="true"
+  labelVerticalOffset="-10px"
+/>
+```
+
 ### "Marker Mode" (Interactive Dots)
 To use labels as markers, set the background color and return an empty string for the label. This gives you dots that are more interactive than standard SVG markers.
 
