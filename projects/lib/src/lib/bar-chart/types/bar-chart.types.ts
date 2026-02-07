@@ -37,6 +37,7 @@ export interface BarStructuralSignature {
   hideYAxis: boolean;
   hideTooltip: boolean;
   orientation: Orientation;
+  showLabels?: boolean;
 }
 
 /**

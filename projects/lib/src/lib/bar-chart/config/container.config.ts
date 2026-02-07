@@ -7,7 +7,7 @@
  * - SRP: Only responsible for container configuration
  */
 
-import type { GroupedBar, StackedBar, Axis, Tooltip } from '@unovis/ts';
+import type { GroupedBar, StackedBar, Axis, Tooltip, XYLabels } from '@unovis/ts';
 
 /**
  * Options for building container configuration.
@@ -15,7 +15,7 @@ import type { GroupedBar, StackedBar, Axis, Tooltip } from '@unovis/ts';
 export interface BarContainerConfigOptions<T> {
   height: number;
   padding: { top: number; right: number; bottom: number; left: number };
-  components: Array<GroupedBar<T> | StackedBar<T>>;
+  components: Array<GroupedBar<T> | StackedBar<T> | XYLabels<T>>;
   xAxis?: Axis<T>;
   yAxis?: Axis<T>;
   tooltip?: Tooltip;

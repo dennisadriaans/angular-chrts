@@ -3,17 +3,6 @@
  *
  * A flexible area chart component that wraps Unovis for Angular applications.
  * Supports both stacked and non-stacked modes with full customization.
- *
- * SOLID Principles Applied:
- * - SRP: Component focuses on Angular integration and template rendering
- * - OCP: Config builders allow extension without modification
- * - DIP: Depends on abstracted config builders and utilities
- *
- * Architecture:
- * - Types: ./types/ - All TypeScript interfaces
- * - Config: ./config/ - Pure config builder functions
- * - Utils: ./utils/ - Pure utility functions
- * - State: ./state/ - State management utilities
  */
 
 import {

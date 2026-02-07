@@ -3,17 +3,7 @@
  *
  * A flexible bar chart component that wraps Unovis for Angular applications.
  * Supports both grouped and stacked modes with vertical/horizontal orientation.
- *
- * SOLID Principles Applied:
- * - SRP: Component focuses on Angular integration and template rendering
- * - OCP: Config builders allow extension without modification
- * - DIP: Depends on abstracted config builders and utilities
- *
- * Architecture:
- * - Types: ./types/ - All TypeScript interfaces
- * - Config: ./config/ - Pure config builder functions
- * - Utils: ./utils/ - Pure utility functions
- * - State: ./state/ - State management utilities
+
  */
 
 import {
@@ -37,6 +27,7 @@ import {
   XYContainer,
   GroupedBar,
   StackedBar,
+  XYLabels,
   Axis,
   Tooltip,
   BulletLegend,
@@ -55,12 +46,14 @@ import {
   buildBarXAxisConfig,
   buildBarYAxisConfig,
   buildBarContainerConfig,
+  buildBarLabelsConfig,
 } from './config';
 import {
   createYAccessors,
   extractBarColors,
   extractBarLegendItems,
   createTickFormatter,
+  calculateBarOffset,
 } from './utils';
 import { hasBarSignatureChanged } from './state';
 
@@ -74,6 +67,7 @@ import { hasBarSignatureChanged } from './state';
       [style.display]="'flex'"
       [style.flexDirection]="isLegendTop() ? 'column-reverse' : 'column'"
       [style.gap]="'var(--vis-legend-spacing, 8px)'"
+      [style]="chartStyle()"
       (click)="onClick($event)"
     >
       <!-- Chart container managed by unovis/ts -->
@@ -101,6 +95,17 @@ import { hasBarSignatureChanged } from './state';
       </div>
     </div>
   `,
+  styles: [`
+    /* 
+     * Target the text and rect elements inside the label group marked with data-ngx-label-floating.
+     * We use a data attribute selector because Unovis class names can be dynamic/hashed.
+     * ng-deep is used because these elements are appended dynamically by Unovis.
+     */
+    :host ::ng-deep [data-ngx-label-floating="true"] text,
+    :host ::ng-deep [data-ngx-label-floating="true"] rect {
+      transform: translateY(var(--ngx-label-offset, 0));
+    }
+  `],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class BarChartComponent<T extends Record<string, any>> implements OnDestroy {
@@ -210,6 +215,21 @@ export class BarChartComponent<T extends Record<string, any>> implements OnDestr
   readonly legendStyle = input<Record<string, string>>();
 
   // ===== ADVANCED CONFIGURATION =====
+  /** Whether to show value labels on the chart. */
+  readonly showLabels = input<boolean>(false);
+
+  /** Formatter function for labels. Defaults to (d) => string(value). */
+  readonly labelFormatter = input<(d: T) => string | undefined>();
+
+  /** Color for labels. Defaults to series color. */
+  readonly labelColor = input<string | ((d: T) => string)>();
+
+  /** Background color for labels. Useful for creating dot/marker effects. */
+  readonly labelBackgroundColor = input<string | ((d: T) => string)>();
+
+  /** Vertical offset for labels (e.g., "-10px" to float above). */
+  readonly labelVerticalOffset = input<string>();
+
   /** Configuration for value labels on bars. */
   readonly valueLabel = input<ValueLabel>();
 
@@ -238,6 +258,7 @@ export class BarChartComponent<T extends Record<string, any>> implements OnDestr
   // ===== UNOVIS INSTANCES =====
   private container: XYContainer<T> | null = null;
   private barComponent: GroupedBar<T> | StackedBar<T> | null = null;
+  private labels: XYLabels<T>[] = [];
   private xAxisComponent: Axis<T> | null = null;
   private yAxisComponent: Axis<T> | null = null;
   private tooltip: Tooltip | null = null;
@@ -250,6 +271,12 @@ export class BarChartComponent<T extends Record<string, any>> implements OnDestr
 
   // ===== COMPUTED VALUES =====
   readonly categoryKeys = computed(() => Object.keys(this.categories()));
+
+  readonly dataIndexMap = computed(() => {
+    const map = new Map<T, number>();
+    this.data().forEach((d, i) => map.set(d, i));
+    return map;
+  });
 
   readonly isLegendTop = computed(() => this.legendPosition().startsWith('top'));
 
@@ -266,6 +293,15 @@ export class BarChartComponent<T extends Record<string, any>> implements OnDestr
 
   readonly colors = computed(() => extractBarColors(this.categories()));
 
+  readonly chartStyle = computed(() => {
+    const vars: Record<string, string> = {};
+    const offset = this.labelVerticalOffset();
+    if (offset) {
+      vars['--ngx-label-offset'] = offset;
+    }
+    return vars;
+  });
+
   readonly structuralSignature = computed((): BarStructuralSignature => ({
     stacked: this.stacked(),
     categoryKeys: this.categoryKeys().join(','),
@@ -274,6 +310,7 @@ export class BarChartComponent<T extends Record<string, any>> implements OnDestr
     hideYAxis: this.hideYAxis(),
     hideTooltip: this.hideTooltip(),
     orientation: this.orientation(),
+    showLabels: this.showLabels(),
   }));
 
   // ===== CONSTRUCTOR =====
@@ -341,6 +378,7 @@ export class BarChartComponent<T extends Record<string, any>> implements OnDestr
   // ===== CHART INITIALIZATION =====
   private initializeChart(element: HTMLElement, data: T[]): void {
     this.createBarComponent();
+    this.createLabelsComponent();
     this.createAxes();
     this.createTooltip();
 
@@ -356,6 +394,7 @@ export class BarChartComponent<T extends Record<string, any>> implements OnDestr
     if (!this.container) return;
 
     this.updateBarComponent();
+    this.updateLabelsComponent();
     this.updateAxes();
     this.updateContainer(data);
   }
@@ -394,6 +433,86 @@ export class BarChartComponent<T extends Record<string, any>> implements OnDestr
       groupPadding: this.groupPadding(),
       orientation: this.orientation(),
     };
+  }
+
+  // ===== LABELS COMPONENT =====
+  private createLabelsComponent(): void {
+    this.labels = [];
+    if (!this.showLabels()) return;
+
+    const yAccessors = this.yAccessors();
+    const colors = this.colors();
+    const isStacked = this.stacked();
+    const numSeries = yAccessors.length;
+    const groupPadding = this.groupPadding();
+    const barPadding = this.barPadding();
+
+    yAccessors.forEach((yAccessor, i) => {
+      // Calculate offset for grouped bars (0 for stacked)
+      const offset = isStacked 
+        ? 0 
+        : calculateBarOffset(i, numSeries, groupPadding, barPadding);
+
+      const config = buildBarLabelsConfig<T>({
+        x: (d: T) => (this.dataIndexMap().get(d) ?? 0) + offset,
+        y: (d: T) => {
+          const val = typeof yAccessor === 'function' ? yAccessor(d, 0) : yAccessor;
+          return Number(val);
+        },
+        color: this.labelColor() ?? colors[i],
+        backgroundColor: this.labelBackgroundColor(),
+        label: this.labelFormatter() ?? ((d: T) => {
+          const val = typeof yAccessor === 'function' ? yAccessor(d, 0) : yAccessor;
+          return String(val ?? '');
+        }),
+        labelVerticalOffset: this.labelVerticalOffset(),
+        orientation: this.orientation(),
+      });
+      this.labels.push(new XYLabels<T>(config));
+    });
+  }
+
+  private updateLabelsComponent(): void {
+    if (!this.showLabels()) {
+      this.labels = [];
+      return;
+    }
+
+    const yAccessors = this.yAccessors();
+    const colors = this.colors();
+    const isStacked = this.stacked();
+    const numSeries = yAccessors.length;
+    const groupPadding = this.groupPadding();
+    const barPadding = this.barPadding();
+
+    // If counts match, update existing. Else recreate.
+    if (this.labels.length === yAccessors.length) {
+      yAccessors.forEach((yAccessor, i) => {
+        // Calculate offset for grouped bars (0 for stacked)
+        const offset = isStacked 
+          ? 0 
+          : calculateBarOffset(i, numSeries, groupPadding, barPadding);
+
+        const config = buildBarLabelsConfig<T>({
+          x: (d: T) => (this.dataIndexMap().get(d) ?? 0) + offset,
+          y: (d: T) => {
+            const val = typeof yAccessor === 'function' ? yAccessor(d, 0) : yAccessor;
+            return Number(val);
+          },
+          color: this.labelColor() ?? colors[i],
+          backgroundColor: this.labelBackgroundColor(),
+          label: this.labelFormatter() ?? ((d: T) => {
+            const val = typeof yAccessor === 'function' ? yAccessor(d, 0) : yAccessor;
+            return String(val ?? '');
+          }),
+          labelVerticalOffset: this.labelVerticalOffset(),
+          orientation: this.orientation(),
+        });
+        this.labels[i].setConfig(config);
+      });
+    } else {
+      this.createLabelsComponent();
+    }
   }
 
   // ===== AXES =====
@@ -465,7 +584,10 @@ export class BarChartComponent<T extends Record<string, any>> implements OnDestr
     return buildBarContainerConfig({
       height: this.height(),
       padding: this.padding(),
-      components: this.barComponent ? [this.barComponent] : [],
+      components: [
+        ...(this.barComponent ? [this.barComponent] : []),
+        ...this.labels,
+      ],
       xAxis: this.xAxisComponent ?? undefined,
       yAxis: this.yAxisComponent ?? undefined,
       tooltip: this.tooltip ?? undefined,
@@ -494,6 +616,7 @@ export class BarChartComponent<T extends Record<string, any>> implements OnDestr
     this.container = null;
     this.legend = null;
     this.barComponent = null;
+    this.labels = [];
     this.xAxisComponent = null;
     this.yAxisComponent = null;
     this.tooltip = null;

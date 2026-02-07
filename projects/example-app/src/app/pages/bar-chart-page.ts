@@ -19,6 +19,8 @@ import { data, stackedData, areaCategories, formatX, formatStackedX } from '../d
         yLabel="Value"
         [yGridLine]="true"
         [radius]="4"
+        [showLabels]="true"
+        labelVerticalOffset="-12px"
       ></ngx-bar-chart>
     </div>
 
