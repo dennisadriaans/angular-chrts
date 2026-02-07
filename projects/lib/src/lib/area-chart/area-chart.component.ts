@@ -38,6 +38,7 @@ import {
   XYContainer,
   Area,
   Line,
+  XYLabels,
   Axis,
   Crosshair,
   Tooltip,
@@ -55,7 +56,14 @@ import { createMarkers } from '../utils/index';
 
 // Local extracted modules
 import type { StructuralSignature, GradientStop } from './types';
-import { buildAreaConfig, buildLineConfig, buildXAxisConfig, buildYAxisConfig, buildContainerConfig } from './config';
+import {
+  buildAreaConfig,
+  buildLineConfig,
+  buildLabelsConfig,
+  buildXAxisConfig,
+  buildYAxisConfig,
+  buildContainerConfig,
+} from './config';
 import {
   createStackedYAccessors,
   createCumulativeYAccessors,
@@ -77,7 +85,7 @@ import { hasSignatureChanged } from './state';
       [style.display]="'flex'"
       [style.flexDirection]="isLegendTop() ? 'column-reverse' : 'column'"
       [style.gap]="'var(--vis-legend-spacing, 8px)'"
-      [style]="markerCssVars()"
+      [style]="chartStyle()"
       [class.stacked-area-chart]="stacked()"
       [attr.id]="markerConfig()?.id"
       (click)="onClick($event)"
@@ -112,6 +120,17 @@ import { hasSignatureChanged } from './state';
       </div>
     </div>
   `,
+  styles: [`
+    /* 
+     * Target the text and rect elements inside the label group marked with data-ngx-label-floating.
+     * We use a data attribute selector because Unovis class names can be dynamic/hashed.
+     * ng-deep is used because these elements are appended dynamically by Unovis.
+     */
+    :host ::ng-deep [data-ngx-label-floating="true"] text,
+    :host ::ng-deep [data-ngx-label-floating="true"] rect {
+      transform: translateY(var(--ngx-label-offset, 0));
+    }
+  `],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AreaChartComponent<T extends Record<string, any>> implements OnDestroy {
@@ -139,6 +158,21 @@ export class AreaChartComponent<T extends Record<string, any>> implements OnDest
 
   /** Whether to hide the filled area and only show lines. */
   readonly hideArea = input<boolean>(false);
+
+  /** Whether to show value labels on the chart. */
+  readonly showLabels = input<boolean>(false);
+
+  /** Formatter function for labels. Defaults to (d) => string(value). */
+  readonly labelFormatter = input<(d: T) => string | undefined>();
+
+  /** Color for labels. Defaults to series color. */
+  readonly labelColor = input<string | ((d: T) => string)>();
+
+  /** Background color for labels. Useful for creating dot/marker effects. */
+  readonly labelBackgroundColor = input<string | ((d: T) => string)>();
+
+  /** Vertical offset for labels (e.g., "-10px" to float above). */
+  readonly labelVerticalOffset = input<string>();
 
   // ===== LINE STYLING =====
   /** The type of curve to use for the lines/areas. */
@@ -259,6 +293,7 @@ export class AreaChartComponent<T extends Record<string, any>> implements OnDest
   private container: XYContainer<T> | null = null;
   private areas: Area<T>[] = [];
   private lines: Line<T>[] = [];
+  private labels: XYLabels<T>[] = [];
   private xAxis: Axis<T> | null = null;
   private yAxis: Axis<T> | null = null;
   private crosshair: Crosshair<T> | null = null;
@@ -291,6 +326,7 @@ export class AreaChartComponent<T extends Record<string, any>> implements OnDest
     hideXAxis: this.hideXAxis(),
     hideYAxis: this.hideYAxis(),
     hideTooltip: this.hideTooltip(),
+    showLabels: this.showLabels(),
   }));
 
   readonly svgDefs = computed(() => {
@@ -305,6 +341,21 @@ export class AreaChartComponent<T extends Record<string, any>> implements OnDest
   });
 
   readonly markerCssVars = computed(() => generateMarkerCssVars(this.markerConfig()));
+
+  readonly chartStyle = computed(() => {
+    const vars: Record<string, string> = { ...this.markerCssVars() };
+    const offset = this.labelVerticalOffset();
+    if (offset) {
+      vars['--ngx-label-offset'] = offset;
+    }
+    return vars;
+  });
+
+  readonly dataIndexMap = computed(() => {
+    const map = new WeakMap<any, number>();
+    this.data().forEach((d, i) => map.set(d, i));
+    return map;
+  });
 
   // ===== CONSTRUCTOR =====
   constructor() {
@@ -372,6 +423,7 @@ export class AreaChartComponent<T extends Record<string, any>> implements OnDest
   private initializeChart(element: HTMLElement, data: T[]): void {
     this.areas = [];
     this.lines = [];
+    this.labels = [];
 
     if (this.stacked()) {
       this.createStackedComponents();
@@ -419,6 +471,7 @@ export class AreaChartComponent<T extends Record<string, any>> implements OnDest
     this.legend = null;
     this.areas = [];
     this.lines = [];
+    this.labels = [];
     this.xAxis = null;
     this.yAxis = null;
     this.crosshair = null;
@@ -442,7 +495,7 @@ export class AreaChartComponent<T extends Record<string, any>> implements OnDest
     const styleParams = this.getStyleParams();
 
     for (const s of seriesData) {
-      const yAccessor = (d: T) => Number(d[s.key]);
+      const yAccessor = (d: T) => Number(d[s.key]) ;
 
       const areaConfig = buildAreaConfig<T>(
         { y: yAccessor, color: `url(#${s.gradientId})` },
@@ -455,6 +508,18 @@ export class AreaChartComponent<T extends Record<string, any>> implements OnDest
         { lineWidth: this.lineWidth(), curveType: this.curveType() }
       );
       this.lines.push(new Line<T>(lineConfig));
+
+      if (this.showLabels()) {
+        const labelsConfig = buildLabelsConfig<T>({
+          x: (d: T) => this.dataIndexMap().get(d),
+          y: yAccessor,
+          color: (this.labelColor() as any) ?? s.color,
+          backgroundColor: (this.labelBackgroundColor() as any),
+          label: this.labelFormatter() ?? ((d: T) => String(d[s.key])),
+          yOffset: this.labelVerticalOffset(),
+        });
+        this.labels.push(new XYLabels<T>(labelsConfig));
+      }
     }
   }
 
@@ -475,6 +540,22 @@ export class AreaChartComponent<T extends Record<string, any>> implements OnDest
       { lineWidth: this.lineWidth(), curveType: this.curveType() }
     );
     this.lines.push(new Line<T>(lineConfig));
+
+    if (this.showLabels()) {
+      for (let i = 0; i < keys.length; i++) {
+        const key = keys[i];
+        const s = series[i];
+        const labelsConfig = buildLabelsConfig<T>({
+          x: (d: T) => this.dataIndexMap().get(d),
+          y: lineYAccessors[i],
+          color: (this.labelColor() as any) ?? s.color,
+          backgroundColor: (this.labelBackgroundColor() as any),
+          label: this.labelFormatter() ?? ((d: T) => String(d[key])),
+          yOffset: this.labelVerticalOffset(),
+        });
+        this.labels.push(new XYLabels<T>(labelsConfig));
+      }
+    }
   }
 
   private createAxes(): void {
@@ -519,6 +600,18 @@ export class AreaChartComponent<T extends Record<string, any>> implements OnDest
         { lineWidth: this.lineWidth(), curveType: this.curveType() }
       );
       this.lines[index]?.setConfig(lineConfig);
+
+      if (this.showLabels()) {
+        const labelsConfig = buildLabelsConfig<T>({
+          x: (d: T) => this.dataIndexMap().get(d),
+          y: yAccessor,
+          color: (this.labelColor() as any) ?? s.color,
+          backgroundColor: (this.labelBackgroundColor() as any),
+          label: this.labelFormatter() ?? ((d: T) => String(d[s.key])),
+          yOffset: this.labelVerticalOffset(),
+        });
+        this.labels[index]?.setConfig(labelsConfig);
+      }
     });
   }
 
@@ -539,6 +632,21 @@ export class AreaChartComponent<T extends Record<string, any>> implements OnDest
       { lineWidth: this.lineWidth(), curveType: this.curveType() }
     );
     this.lines[0]?.setConfig(lineConfig);
+
+    if (this.showLabels()) {
+      keys.forEach((key, i) => {
+        const s = series[i];
+        const labelsConfig = buildLabelsConfig<T>({
+          x: (d: T) => this.dataIndexMap().get(d),
+          y: lineYAccessors[i],
+          color: (this.labelColor() as any) ?? s.color,
+          backgroundColor: (this.labelBackgroundColor() as any),
+          label: this.labelFormatter() ?? ((d: T) => String(d[key])),
+          yOffset: this.labelVerticalOffset(),
+        });
+        this.labels[i]?.setConfig(labelsConfig);
+      });
+    }
   }
 
   private updateAxes(): void {
@@ -595,7 +703,7 @@ export class AreaChartComponent<T extends Record<string, any>> implements OnDest
       padding: this.padding(),
       yDomain: this.yDomain(),
       xDomain: this.xDomain(),
-      components: [...this.areas, ...this.lines],
+      components: [...this.areas, ...this.lines, ...this.labels],
       xAxis: this.xAxis ?? undefined,
       yAxis: this.yAxis ?? undefined,
       crosshair: this.crosshair ?? undefined,

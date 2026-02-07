@@ -48,6 +48,11 @@ import { LegendPosition, axisFormatter, AxisConfig, MarkerConfig, BulletLegendIt
       [markerConfig]="markerConfig()"
       [yDomain]="yDomain()"
       [xDomain]="xDomain()"
+      [showLabels]="showLabels()"
+      [labelFormatter]="labelFormatter()"
+      [labelColor]="labelColor()"
+      [labelBackgroundColor]="labelBackgroundColor()"
+      [labelVerticalOffset]="labelVerticalOffset()"
       (click)="click.emit($event)"
     ></ngx-area-chart>
   `,
@@ -91,6 +96,13 @@ export class LineChartComponent<T extends Record<string, any>> {
   readonly markerConfig = input<MarkerConfig>();
   readonly yDomain = input<[number, number]>();
   readonly xDomain = input<[number, number]>();
+
+  // ===== LABEL CONFIGURATION =====
+  readonly showLabels = input<boolean>(false);
+  readonly labelFormatter = input<(d: T) => string | undefined>();
+  readonly labelColor = input<string | ((d: T) => string)>();
+  readonly labelBackgroundColor = input<string | ((d: T) => string)>();
+  readonly labelVerticalOffset = input<string>();
 
   readonly click = output<{ event: MouseEvent; values?: T }>();
 }
