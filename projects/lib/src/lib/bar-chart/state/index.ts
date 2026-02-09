@@ -1,7 +1,3 @@
-/**
- * Bar Chart State - Public Exports
- */
-
 export {
   createBarStructuralSignature,
   hasBarSignatureChanged,

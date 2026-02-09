@@ -1,13 +1,3 @@
-/**
- * Shared Accessor Utilities
- *
- * Common data accessor creation functions used across chart components.
- *
- * SOLID Principles:
- * - SRP: Only responsible for accessor creation
- * - DRY: Single source of truth for accessor patterns
- */
-
 import type { NumericAccessor } from '@unovis/ts';
 
 /**

@@ -1,10 +1,3 @@
-/**
- * Tooltip Utilities
- *
- * Pure functions for tooltip data processing.
- * Uses shared utilities where possible.
- */
-
 import type { BulletLegendItemInterface } from '../../types';
 import { TOOLTIP_BLOCKLIST_KEYS, type TooltipEntry } from '../types';
 

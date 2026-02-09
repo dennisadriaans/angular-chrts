@@ -1,6 +1,3 @@
-/**
- * Donut Chart Utils - Public API
- */
 export {
   normalizeColor,
   extractDonutColors,

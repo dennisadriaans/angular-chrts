@@ -1,9 +1,3 @@
-/**
- * Tooltip Module - Public API
- *
- * Tree-shakable exports for the tooltip component and utilities.
- */
-
 // Component
 export { TooltipComponent } from './tooltip.component';
 

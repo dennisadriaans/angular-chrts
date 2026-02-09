@@ -1,14 +1,3 @@
-/**
- * Series Utilities
- *
- * Pure functions for creating and managing series descriptors.
- * Re-exports shared utilities for backward compatibility.
- *
- * SOLID Principles:
- * - SRP: Only responsible for series descriptor operations
- * - DRY: Uses shared utilities where possible
- */
-
 import type { SeriesDescriptor } from '../types';
 import { getGradientId } from './svg-generators';
 

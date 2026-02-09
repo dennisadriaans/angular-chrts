@@ -1,8 +1,3 @@
-/**
- * Legend-related types and configurations.
- * These types define how legends are displayed and positioned in charts.
- */
-
 import type { BulletLegendItemInterface as UnovisBulletLegendItemInterface } from '@unovis/ts';
 
 /**

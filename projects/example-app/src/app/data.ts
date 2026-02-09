@@ -30,7 +30,7 @@ export const data: ChartData[] = [
   { date: '2024-06-01', value: 28, sales: 150, profit: 70 },
 ];
   
-export const areaCategories: Record<string, AreaChartCategory> = {
+export const categories: Record<string, AreaChartCategory> = {
   sales: {
     name: 'Sales',
     color: 'var(--test-color)',

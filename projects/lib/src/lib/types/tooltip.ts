@@ -1,9 +1,4 @@
 /**
- * Tooltip-related types and configurations.
- * These types define tooltip behavior and appearance.
- */
-
-/**
  * Configuration for chart tooltips.
  * Controls timing and positioning of tooltip displays.
  */

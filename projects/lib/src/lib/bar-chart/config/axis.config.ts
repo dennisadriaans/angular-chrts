@@ -1,13 +1,3 @@
-/**
- * Axis Config Builders for Bar Chart
- *
- * Pure functions for building Unovis Axis configurations specific to bar charts.
- *
- * SOLID Principles:
- * - SRP: Only responsible for axis configuration
- * - OCP: New axis options can be added without modifying existing code
- */
-
 import { Position, Orientation } from '@unovis/ts';
 import type { BarXAxisConfigOptions, BarYAxisConfigOptions } from '../types';
 

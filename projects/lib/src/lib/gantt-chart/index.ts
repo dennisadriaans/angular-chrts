@@ -1,9 +1,3 @@
-/**
- * Gantt Chart Module - Public API
- *
- * Tree-shakable exports for the gantt chart component and utilities.
- */
-
 // Component
 export { GanttChartComponent } from './gantt-chart.component';
 

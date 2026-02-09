@@ -1,9 +1,3 @@
-/**
- * Tooltip Component
- *
- * A configurable tooltip component for displaying chart hover data.
- * Uses CSS custom properties for theming.
- */
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import type { BulletLegendItemInterface } from '../types';
 import type { AxisFormatter } from '../types/axis';

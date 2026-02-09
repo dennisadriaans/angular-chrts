@@ -1,15 +1,3 @@
-/**
- * Area Chart Types
- *
- * Central type definitions for the area chart component.
- * Keeping types separate improves:
- * - Reusability across config builders and utilities
- * - Tree-shaking (types are erased at compile time)
- * - Documentation and IntelliSense
- *
- * SOLID: Single Responsibility - only type definitions
- */
-
 import { CurveType } from '@unovis/ts';
 
 /**

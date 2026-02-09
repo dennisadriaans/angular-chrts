@@ -1,13 +1,3 @@
-/**
- * Shared Color Utilities
- *
- * Common color handling functions used across all chart components.
- *
- * SOLID Principles:
- * - SRP: Only responsible for color operations
- * - DRY: Single source of truth for color handling
- */
-
 import type { BulletLegendItemInterface } from '../../types';
 
 /**

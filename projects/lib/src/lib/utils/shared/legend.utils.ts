@@ -1,13 +1,3 @@
-/**
- * Shared Legend Utilities
- *
- * Common legend handling functions used across all chart components.
- *
- * SOLID Principles:
- * - SRP: Only responsible for legend operations
- * - DRY: Single source of truth for legend handling
- */
-
 import type { BulletLegendItemInterface } from '../../types';
 
 /**

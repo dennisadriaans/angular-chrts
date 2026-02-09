@@ -1,12 +1,3 @@
-/**
- * Container Config Builder for Bar Chart
- *
- * Pure function for building Unovis XYContainer configuration.
- *
- * SOLID Principles:
- * - SRP: Only responsible for container configuration
- */
-
 import type { GroupedBar, StackedBar, Axis, Tooltip, XYLabels } from '@unovis/ts';
 
 /**

@@ -1,10 +1,4 @@
 /**
- * Tooltip Types
- *
- * Type definitions for the tooltip component.
- */
-
-/**
  * Configuration for tooltip display styles.
  */
 export interface TooltipStyles {

@@ -1,14 +1,3 @@
-/**
- * Area Config Builder
- *
- * Pure function for building Unovis Area component configuration.
- *
- * SOLID Principles:
- * - SRP: Only responsible for area configuration
- * - OCP: New area options can be added without modifying existing code
- * - DIP: Depends on abstractions (interfaces) not concrete implementations
- */
-
 import { CurveType } from '@unovis/ts';
 import type { AreaConfig, AreaConfigOptions } from '../types';
 

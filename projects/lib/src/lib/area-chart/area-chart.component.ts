@@ -1,10 +1,3 @@
-/**
- * Area Chart Component
- *
- * A flexible area chart component that wraps Unovis for Angular applications.
- * Supports both stacked and non-stacked modes with full customization.
- */
-
 import {
   ChangeDetectionStrategy,
   ChangeDetectorRef,

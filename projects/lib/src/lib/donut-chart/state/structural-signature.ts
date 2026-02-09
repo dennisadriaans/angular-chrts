@@ -1,12 +1,3 @@
-/**
- * Donut Chart Structural Signature
- *
- * Functions for tracking structural changes that require chart rebuild.
- *
- * SOLID Principles:
- * - SRP: Only responsible for signature management
- */
-
 import { hasBaseSignatureChanged } from '../../utils/shared';
 import { DonutType, type DonutStructuralSignature } from '../types';
 

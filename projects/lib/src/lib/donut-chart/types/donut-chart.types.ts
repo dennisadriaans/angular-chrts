@@ -1,11 +1,3 @@
-/**
- * Donut Chart Types
- *
- * Central type definitions for the donut chart component.
- *
- * SOLID: Single Responsibility - only type definitions
- */
-
 // Re-export shared types
 export type { NormalizedLegendItem } from '../../utils/shared';
 

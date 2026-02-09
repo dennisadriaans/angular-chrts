@@ -1,9 +1,3 @@
-/**
- * Gantt Axis Configuration Builder
- *
- * Pure function for building X-axis configuration.
- */
-
 import type { AxisConfigInterface } from '@unovis/ts';
 import { Position } from '@unovis/ts';
 import type { GanttXAxisConfigOptions } from '../types';

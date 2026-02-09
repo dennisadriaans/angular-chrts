@@ -1,13 +1,3 @@
-/**
- * Shared Formatter Utilities
- *
- * Common formatting functions used across chart components.
- *
- * SOLID Principles:
- * - SRP: Only responsible for formatting operations
- * - DRY: Single source of truth for formatter patterns
- */
-
 import { isBrowser } from '../browser';
 
 /**

@@ -1,9 +1,3 @@
-/**
- * Bar Chart Labels Config Builder
- *
- * Pure function for building Unovis XYLabels component configuration for bar charts.
- */
-
 import { XYLabels, Orientation } from '@unovis/ts';
 
 /**

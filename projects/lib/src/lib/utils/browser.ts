@@ -1,10 +1,4 @@
 /**
- * SSR-safe browser utilities.
- * These utilities provide safe access to browser-specific features
- * that don't exist in server-side or edge runtime environments.
- */
-
-/**
  * Check if running in a browser environment.
  */
 export function isBrowser(): boolean {

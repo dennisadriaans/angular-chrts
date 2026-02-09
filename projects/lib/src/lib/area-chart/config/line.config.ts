@@ -1,14 +1,3 @@
-/**
- * Line Config Builder
- *
- * Pure function for building Unovis Line component configuration.
- *
- * SOLID Principles:
- * - SRP: Only responsible for line configuration
- * - OCP: New line options can be added without modifying existing code
- * - DIP: Depends on abstractions (interfaces) not concrete implementations
- */
-
 import { CurveType } from '@unovis/ts';
 import type { LineConfig, LineConfigOptions } from '../types';
 

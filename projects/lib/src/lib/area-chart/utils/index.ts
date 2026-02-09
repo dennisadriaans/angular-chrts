@@ -1,9 +1,3 @@
-/**
- * Area Chart Utils - Public Exports
- *
- * Re-exports all utility functions for tree-shakable imports.
- */
-
 export {
   createStackedYAccessors,
   createCumulativeYAccessors,

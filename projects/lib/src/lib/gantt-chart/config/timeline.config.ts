@@ -1,9 +1,3 @@
-/**
- * Timeline Configuration Builder
- *
- * Pure function for building Timeline component configuration.
- */
-
 import type { TimelineConfigInterface } from '@unovis/ts';
 import type { TimelineConfigOptions } from '../types';
 

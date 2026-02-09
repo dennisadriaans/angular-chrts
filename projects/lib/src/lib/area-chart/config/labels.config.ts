@@ -1,9 +1,3 @@
-/**
- * XYLabels Config Builder
- *
- * Pure function for building Unovis XYLabels component configuration.
- */
-
 import { XYLabels } from '@unovis/ts';
 import type { XYLabelsConfig } from '../types';
 

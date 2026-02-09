@@ -1,13 +1,3 @@
-/**
- * Structural Signature Utilities
- *
- * Pure functions for comparing structural signatures to determine rebuild needs.
- *
- * SOLID Principles:
- * - SRP: Only responsible for signature comparison
- * - OCP: New signature properties can be added without modifying comparison logic
- */
-
 import type { StructuralSignature } from '../types';
 
 /**
