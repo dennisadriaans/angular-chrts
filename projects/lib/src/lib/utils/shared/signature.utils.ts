@@ -2,10 +2,6 @@
  * Shared Structural Signature Utilities
  *
  * Common pattern for detecting structural changes that require chart rebuilds.
- *
- * SOLID Principles:
- * - SRP: Only responsible for signature comparison
- * - DRY: Single source of truth for signature pattern
  */
 
 /**

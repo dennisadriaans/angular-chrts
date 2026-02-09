@@ -2,10 +2,6 @@
  * Donut Configuration Builder
  *
  * Pure function for building donut component configuration.
- *
- * SOLID Principles:
- * - SRP: Only responsible for donut configuration
- * - OCP: Can extend without modifying existing code
  */
 
 import type { DonutConfigInterface } from '@unovis/ts';
