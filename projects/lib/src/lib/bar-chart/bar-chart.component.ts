@@ -1,19 +1,5 @@
 /**
  * Bar Chart Component
- *
- * A flexible bar chart component that wraps Unovis for Angular applications.
- * Supports both grouped and stacked modes with vertical/horizontal orientation.
- *
- * SOLID Principles Applied:
- * - SRP: Component focuses on Angular integration and template rendering
- * - OCP: Config builders allow extension without modification
- * - DIP: Depends on abstracted config builders and utilities
- *
- * Architecture:
- * - Types: ./types/ - All TypeScript interfaces
- * - Config: ./config/ - Pure config builder functions
- * - Utils: ./utils/ - Pure utility functions
- * - State: ./state/ - State management utilities
  */
 
 import {
@@ -96,7 +82,7 @@ import { hasBarSignatureChanged } from './state';
             [data]="hoverValues()!"
             [categories]="categories()"
             [titleFormatter]="tooltipTitleFormatter()"
-            [yFormatter]="orientation() === Orientation.Horizontal ? xFormatter() : yFormatter()"
+            [yFormatter]="yFormatter()"
           ></ngx-tooltip>
         }
       </div>
@@ -419,10 +405,11 @@ export class BarChartComponent<T extends Record<string, any>> implements OnDestr
   }
 
   private getXAxisConfig() {
+    const isHorizontal = this.orientation() === Orientation.Horizontal;
     return buildBarXAxisConfig({
-      label: this.xLabel(),
-      numTicks: this.xNumTicks(),
-      tickFormat: createTickFormatter(this.xFormatter()),
+      label: isHorizontal ? this.yLabel() : this.xLabel(),
+      numTicks: isHorizontal ? this.yNumTicks() : this.xNumTicks(),
+      tickFormat: createTickFormatter(isHorizontal ? this.yFormatter() : this.xFormatter()),
       tickValues: this.xExplicitTicksValues(),
       gridLine: this.xGridLine(),
       domainLine: this.xDomainLine(),
@@ -432,10 +419,11 @@ export class BarChartComponent<T extends Record<string, any>> implements OnDestr
   }
 
   private getYAxisConfig() {
+    const isHorizontal = this.orientation() === Orientation.Horizontal;
     return buildBarYAxisConfig({
-      label: this.yLabel(),
-      numTicks: this.yNumTicks(),
-      tickFormat: createTickFormatter(this.yFormatter()),
+      label: isHorizontal ? this.xLabel() : this.yLabel(),
+      numTicks: isHorizontal ? this.xNumTicks() : this.yNumTicks(),
+      tickFormat: createTickFormatter(isHorizontal ? this.xFormatter() : this.yFormatter()),
       gridLine: this.yGridLine(),
       domainLine: this.yDomainLine(),
       tickLine: this.yTickLine(),

@@ -3,11 +3,6 @@
  *
  * A configurable gantt/timeline chart component built on Unovis.
  * Displays tasks, events, or activities on a timeline with categories.
- *
- * SOLID Principles Applied:
- * - SRP: Component only orchestrates, delegates to pure functions
- * - OCP: Extended via configuration, not modification
- * - DIP: Depends on abstractions (config builders) not concrete implementations
  */
 import {
   ChangeDetectionStrategy,

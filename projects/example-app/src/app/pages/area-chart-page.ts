@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { AreaChartComponent, CurveType, LegendPosition } from 'angular-chrts';
-import { data, stackedData, areaCategories, formatX, formatStackedX, ChartData } from '../data';
+import { data, stackedData, categories, formatX, formatStackedX, ChartData } from '../data';
 
 @Component({
   selector: 'app-area-chart-page',
@@ -11,7 +11,7 @@ import { data, stackedData, areaCategories, formatX, formatStackedX, ChartData }
       <h2 style="margin-bottom: 1rem;">Area Chart - Overlapping</h2>
       <ngx-area-chart 
         [data]="data" 
-        [categories]="areaCategories"
+        [categories]="categories"
         [height]="400"
         [xFormatter]="formatX"
         xLabel="Month"
@@ -29,7 +29,7 @@ import { data, stackedData, areaCategories, formatX, formatStackedX, ChartData }
       <h2 style="margin-bottom: 1rem;">Area Chart - Stacked</h2>
       <ngx-area-chart 
         [data]="stackedData" 
-        [categories]="areaCategories"
+        [categories]="categories"
         [height]="400"
         [xFormatter]="formatStackedX"
         xLabel="Day"
@@ -46,7 +46,7 @@ import { data, stackedData, areaCategories, formatX, formatStackedX, ChartData }
 export class AreaChartPageComponent {
   protected readonly data = data;
   protected readonly stackedData = stackedData;
-  protected readonly areaCategories = areaCategories;
+  protected readonly categories = categories;
   protected readonly CurveType = CurveType;
   protected readonly LegendPosition = LegendPosition;
   protected readonly formatX = formatX;

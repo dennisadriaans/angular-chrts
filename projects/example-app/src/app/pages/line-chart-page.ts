@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { LineChartComponent, CurveType } from 'angular-chrts';
-import { data, areaCategories, formatX } from '../data';
+import { data, categories, formatX } from '../data';
 
 @Component({
   selector: 'app-line-chart-page',
@@ -11,7 +11,7 @@ import { data, areaCategories, formatX } from '../data';
       <h2 style="margin-bottom: 1rem;">Line Chart</h2>
       <ngx-line-chart 
         [data]="data" 
-        [categories]="areaCategories"
+        [categories]="categories"
         [height]="400"
         [xFormatter]="formatX"
         xLabel="Month"
@@ -25,7 +25,7 @@ import { data, areaCategories, formatX } from '../data';
 })
 export class LineChartPageComponent {
   protected readonly data = data;
-  protected readonly areaCategories = areaCategories;
+  protected readonly categories = categories;
   protected readonly CurveType = CurveType;
   protected readonly formatX = formatX;
 }

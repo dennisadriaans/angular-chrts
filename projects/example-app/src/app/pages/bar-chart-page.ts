@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { BarChartComponent, Orientation } from 'angular-chrts';
-import { data, stackedData, areaCategories, formatX, formatStackedX } from '../data';
+import { data, stackedData, categories, formatX, formatStackedX } from '../data';
 
 @Component({
   selector: 'app-bar-chart-page',
@@ -11,7 +11,7 @@ import { data, stackedData, areaCategories, formatX, formatStackedX } from '../d
       <h2 style="margin-bottom: 1rem;">Bar Chart - Grouped</h2>
       <ngx-bar-chart 
         [data]="data" 
-        [categories]="areaCategories"
+        [categories]="categories"
         [yAxis]="['sales', 'profit']"
         [height]="400"
         [xFormatter]="formatX"
@@ -27,7 +27,7 @@ import { data, stackedData, areaCategories, formatX, formatStackedX } from '../d
       <h2 style="margin-bottom: 1rem;">Bar Chart - Stacked (Horizontal)</h2>
       <ngx-bar-chart 
         [data]="stackedData" 
-        [categories]="areaCategories"
+        [categories]="categories"
         [orientation]="Orientation.Horizontal"
         [yAxis]="['sales', 'profit']"
         [height]="400"
@@ -44,7 +44,7 @@ import { data, stackedData, areaCategories, formatX, formatStackedX } from '../d
 export class BarChartPageComponent {
   protected readonly data = data;
   protected readonly stackedData = stackedData;
-  protected readonly areaCategories = areaCategories;
+  protected readonly categories = categories;
   protected readonly Orientation = Orientation;
   protected readonly formatX = formatX;
   protected readonly formatStackedX = formatStackedX;

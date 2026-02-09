@@ -3,21 +3,6 @@
  *
  * A configurable donut/pie chart component built on Unovis.
  * Supports full and half-circle variants with optional legend and tooltip.
- *
- * SOLID Principles Applied:
- * - SRP: Component only orchestrates, delegates to pure functions
- * - OCP: Extended via configuration, not modification
- * - DIP: Depends on abstractions (config builders) not concrete implementations
- *
- * @example
- * ```html
- * <ngx-donut-chart
- *   [data]="[30, 45, 25]"
- *   [categories]="{ a: { name: 'A', color: '#3b82f6' }, b: { name: 'B', color: '#ef4444' }, c: { name: 'C', color: '#22c55e' } }"
- *   [type]="DonutType.Full"
- * >
- *   <span class="center-text">Total: 100</span>
- * </ngx-donut-chart>
  * ```
  */
 import {
