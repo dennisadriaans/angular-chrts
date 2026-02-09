@@ -1,9 +1,3 @@
-/**
- * Gantt Chart Component
- *
- * A configurable gantt/timeline chart component built on Unovis.
- * Displays tasks, events, or activities on a timeline with categories.
- */
 import {
   ChangeDetectionStrategy,
   ChangeDetectorRef,

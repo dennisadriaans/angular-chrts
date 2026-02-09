@@ -1,9 +1,3 @@
-/**
- * Donut Chart Structural Signature
- *
- * Functions for tracking structural changes that require chart rebuild.
- */
-
 import { hasBaseSignatureChanged } from '../../utils/shared';
 import { DonutType, type DonutStructuralSignature } from '../types';
 

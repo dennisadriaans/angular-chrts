@@ -1,10 +1,4 @@
-/**
- * Container Config Builder
- *
- * Pure function for building Unovis XYContainer configuration.
- */
-
-import type { Area, Line, Axis, Crosshair, Tooltip } from '@unovis/ts';
+import type { Area, Line, XYLabels, Axis, Crosshair, Tooltip } from '@unovis/ts';
 
 /**
  * Options for building container configuration.
@@ -14,7 +8,7 @@ export interface ContainerConfigOptions<T> {
   padding: { top: number; right: number; bottom: number; left: number };
   yDomain?: [number, number];
   xDomain?: [number, number];
-  components: Array<Area<T> | Line<T>>;
+  components: Array<Area<T> | Line<T> | XYLabels<T>>;
   xAxis?: Axis<T>;
   yAxis?: Axis<T>;
   crosshair?: Crosshair<T>;

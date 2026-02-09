@@ -1,9 +1,3 @@
-/**
- * Shared Color Utilities
- *
- * Common color handling functions used across all chart components.
- */
-
 import type { BulletLegendItemInterface } from '../../types';
 
 /**

@@ -1,9 +1,3 @@
-/**
- * Axis Config Builders
- *
- * Pure functions for building Unovis Axis configurations.
- */
-
 import { Position } from '@unovis/ts';
 import type { XAxisConfigOptions, YAxisConfigOptions } from '../types';
 

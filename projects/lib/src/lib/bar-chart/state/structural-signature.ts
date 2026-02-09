@@ -1,9 +1,3 @@
-/**
- * Bar Chart Structural Signature Utilities
- *
- * Pure functions for comparing structural signatures to determine rebuild needs.
- */
-
 import { Orientation } from '@unovis/ts';
 import type { BarStructuralSignature } from '../types';
 

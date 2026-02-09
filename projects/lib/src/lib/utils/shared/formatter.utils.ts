@@ -1,9 +1,3 @@
-/**
- * Shared Formatter Utilities
- *
- * Common formatting functions used across chart components.
- */
-
 import { isBrowser } from '../browser';
 
 /**

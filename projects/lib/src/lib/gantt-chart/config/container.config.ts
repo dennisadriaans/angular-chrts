@@ -1,9 +1,3 @@
-/**
- * Gantt Container Configuration Builder
- *
- * Pure function for building XYContainer configuration.
- */
-
 import type { XYContainerConfigInterface } from '@unovis/ts';
 import type { GanttContainerConfigOptions } from '../types';
 

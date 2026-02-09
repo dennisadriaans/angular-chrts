@@ -1,10 +1,4 @@
 /**
- * Shared Structural Signature Utilities
- *
- * Common pattern for detecting structural changes that require chart rebuilds.
- */
-
-/**
  * Base structural signature with common properties.
  */
 export interface BaseStructuralSignature {

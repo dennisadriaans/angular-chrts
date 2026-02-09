@@ -1,9 +1,3 @@
-/**
- * Bar Config Builders
- *
- * Pure functions for building Unovis bar component configurations.
- */
-
 import { Orientation } from '@unovis/ts';
 import type { BarConfig, BarConfigOptions } from '../types';
 

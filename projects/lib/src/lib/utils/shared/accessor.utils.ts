@@ -1,9 +1,3 @@
-/**
- * Shared Accessor Utilities
- *
- * Common data accessor creation functions used across chart components.
- */
-
 import type { NumericAccessor } from '@unovis/ts';
 
 /**

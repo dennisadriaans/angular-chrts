@@ -1,9 +1,3 @@
-/**
- * Gantt Chart Structural Signature
- *
- * Functions for tracking structural changes that require chart rebuild.
- */
-
 import { createCategoryKeySignature, hasBaseSignatureChanged } from '../../utils/shared';
 import type { GanttStructuralSignature } from '../types';
 

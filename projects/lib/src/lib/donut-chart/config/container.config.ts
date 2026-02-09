@@ -1,9 +1,3 @@
-/**
- * Donut Container Configuration Builder
- *
- * Pure function for building SingleContainer configuration.
- */
-
 import type { SingleContainerConfigInterface } from '@unovis/ts';
 import type { DonutContainerConfigOptions } from '../types';
 

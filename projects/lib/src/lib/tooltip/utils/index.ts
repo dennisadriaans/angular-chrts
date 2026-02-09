@@ -1,6 +1,3 @@
-/**
- * Tooltip Utils - Public API
- */
 export {
   extractVisibleEntries,
   getCategoryColor,

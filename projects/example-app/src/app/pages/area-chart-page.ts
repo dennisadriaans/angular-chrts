@@ -22,6 +22,8 @@ import { data, stackedData, categories, formatX, formatStackedX, ChartData } fro
         [stacked]="false"
         [legendPosition]="LegendPosition.BottomCenter"
         (click)="handleChartClick($event)"
+        [showLabels]="true"
+        labelVerticalOffset="-12px"
       ></ngx-area-chart>
     </div>
 
@@ -35,6 +37,7 @@ import { data, stackedData, categories, formatX, formatStackedX, ChartData } fro
         xLabel="Day"
         yLabel="Total Value"
         [stacked]="true"
+        [showLabels]="true"
         [curveType]="CurveType.MonotoneX"
         [xGridLine]="true"
         [yGridLine]="true"

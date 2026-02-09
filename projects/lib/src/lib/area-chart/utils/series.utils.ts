@@ -1,10 +1,3 @@
-/**
- * Series Utilities
- *
- * Pure functions for creating and managing series descriptors.
- * Re-exports shared utilities for backward compatibility.
- */
-
 import type { SeriesDescriptor } from '../types';
 import { getGradientId } from './svg-generators';
 

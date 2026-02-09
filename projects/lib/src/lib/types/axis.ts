@@ -1,9 +1,4 @@
 /**
- * Axis-related types and configurations.
- * These types define how chart axes are formatted and displayed.
- */
-
-/**
  * Formatter function for axis tick labels.
  * Supports both numeric and date-based axes.
  */

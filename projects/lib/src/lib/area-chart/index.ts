@@ -1,20 +1,3 @@
-/**
- * Area Chart Module - Public Exports
- *
- * Tree-shakable exports for the area chart component and utilities.
- *
- * Usage:
- * ```typescript
- * // Import only the component
- * import { AreaChartComponent } from 'angular-chrts/area-chart';
- *
- * // Import specific utilities (tree-shakable)
- * import { buildAreaConfig, buildLineConfig } from 'angular-chrts/area-chart/config';
- * import { createStackedYAccessors } from 'angular-chrts/area-chart/utils';
- * import type { SeriesDescriptor } from 'angular-chrts/area-chart/types';
- * ```
- */
-
 // Main component export
 export { AreaChartComponent } from './area-chart.component';
 

@@ -1,9 +1,3 @@
-/**
- * Donut Chart Module - Public API
- *
- * Tree-shakable exports for the donut chart component and utilities.
- */
-
 // Component
 export { DonutChartComponent } from './donut-chart.component';
 

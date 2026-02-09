@@ -1,15 +1,3 @@
-/**
- * Area Chart Types
- *
- * Central type definitions for the area chart component.
- * Keeping types separate improves:
- * - Reusability across config builders and utilities
- * - Tree-shaking (types are erased at compile time)
- * - Documentation and IntelliSense
- *
- * SOLID: Single Responsibility - only type definitions
- */
-
 import { CurveType } from '@unovis/ts';
 
 /**
@@ -38,6 +26,21 @@ export interface StructuralSignature {
   hideXAxis: boolean;
   hideYAxis: boolean;
   hideTooltip: boolean;
+  showLabels: boolean;
+}
+
+/**
+ * Configuration options for XYLabels component.
+ * Typed subset of Unovis XYLabelsConfigInterface.
+ */
+export interface XYLabelsConfig<T> {
+  x: (d: T) => number | undefined;
+  y: (d: T) => number;
+  label?: (d: T) => string | undefined;
+  color?: string | ((d: T) => string);
+  backgroundColor?: string | ((d: T) => string);
+  attributes?: Record<string, any>;
+  events?: Record<string, any>;
 }
 
 /**

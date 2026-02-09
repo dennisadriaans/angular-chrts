@@ -1,9 +1,3 @@
-/**
- * Shared Legend Utilities
- *
- * Common legend handling functions used across all chart components.
- */
-
 import type { BulletLegendItemInterface } from '../../types';
 
 /**

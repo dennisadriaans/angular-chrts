@@ -1,9 +1,3 @@
-/**
- * Gantt Chart Types
- *
- * Central type definitions for the gantt chart component.
- */
-
 import { Position } from '@unovis/ts';
 
 /**

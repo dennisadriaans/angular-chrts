@@ -1,7 +1,3 @@
-/**
- * Area Chart State - Public Exports
- */
-
 export {
   createStructuralSignature,
   hasSignatureChanged,

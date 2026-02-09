@@ -1,9 +1,3 @@
-/**
- * Line Config Builder
- *
- * Pure function for building Unovis Line component configuration.
- */
-
 import { CurveType } from '@unovis/ts';
 import type { LineConfig, LineConfigOptions } from '../types';
 

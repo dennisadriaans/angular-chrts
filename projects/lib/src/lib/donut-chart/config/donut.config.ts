@@ -1,9 +1,3 @@
-/**
- * Donut Configuration Builder
- *
- * Pure function for building donut component configuration.
- */
-
 import type { DonutConfigInterface } from '@unovis/ts';
 import { DonutType, type DonutConfigOptions } from '../types';
 

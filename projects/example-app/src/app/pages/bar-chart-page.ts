@@ -20,6 +20,8 @@ import { data, stackedData, categories, formatX, formatStackedX } from '../data'
         [stacked]=true
         [yGridLine]="true"
         [radius]="4"
+        [showLabels]="true"
+        labelVerticalOffset="-12px"
       ></ngx-bar-chart>
     </div>
 

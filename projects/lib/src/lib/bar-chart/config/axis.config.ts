@@ -1,9 +1,3 @@
-/**
- * Axis Config Builders for Bar Chart
- *
- * Pure functions for building Unovis Axis configurations specific to bar charts.
- */
-
 import { Position, Orientation } from '@unovis/ts';
 import type { BarXAxisConfigOptions, BarYAxisConfigOptions } from '../types';
 

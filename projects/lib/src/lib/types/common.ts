@@ -1,8 +1,4 @@
 /**
- * Common types shared across multiple chart components.
- */
-
-/**
  * Re-export enums from @unovis/ts so consumers can import from this library
  * without accidentally using incompatible enum definitions.
  */

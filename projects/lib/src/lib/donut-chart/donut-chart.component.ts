@@ -1,10 +1,3 @@
-/**
- * Donut Chart Component
- *
- * A configurable donut/pie chart component built on Unovis.
- * Supports full and half-circle variants with optional legend and tooltip.
- * ```
- */
 import {
   ChangeDetectionStrategy,
   ChangeDetectorRef,

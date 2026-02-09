@@ -1,9 +1,3 @@
-/**
- * SVG Generators
- *
- * Pure functions for generating SVG gradient definitions.
- */
-
 import type { GradientStop } from '../types';
 
 /**

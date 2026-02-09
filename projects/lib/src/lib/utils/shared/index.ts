@@ -1,10 +1,3 @@
-/**
- * Shared Utilities - Public API
- *
- * Common utilities used across all chart components.
- * Import from here to reduce duplication.
- */
-
 // Color utilities
 export {
   normalizeColor,

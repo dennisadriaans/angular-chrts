@@ -1,20 +1,3 @@
-/**
- * Bar Chart Module - Public Exports
- *
- * Tree-shakable exports for the bar chart component and utilities.
- *
- * Usage:
- * ```typescript
- * // Import only the component
- * import { BarChartComponent } from 'angular-chrts/bar-chart';
- *
- * // Import specific utilities (tree-shakable)
- * import { buildGroupedBarConfig, buildStackedBarConfig } from 'angular-chrts/bar-chart/config';
- * import { createYAccessors } from 'angular-chrts/bar-chart/utils';
- * import type { BarStructuralSignature, ValueLabel } from 'angular-chrts/bar-chart/types';
- * ```
- */
-
 // Main component export
 export { BarChartComponent } from './bar-chart.component';
 

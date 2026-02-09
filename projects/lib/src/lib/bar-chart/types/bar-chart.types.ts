@@ -1,11 +1,3 @@
-/**
- * Bar Chart Types
- *
- * Central type definitions for the bar chart component.
- *
- * SOLID: Single Responsibility - only type definitions
- */
-
 import type { NumericAccessor } from '@unovis/ts';
 import { Orientation } from '@unovis/ts';
 
@@ -37,6 +29,7 @@ export interface BarStructuralSignature {
   hideYAxis: boolean;
   hideTooltip: boolean;
   orientation: Orientation;
+  showLabels?: boolean;
 }
 
 /**

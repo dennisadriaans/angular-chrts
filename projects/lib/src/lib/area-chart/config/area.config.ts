@@ -1,9 +1,3 @@
-/**
- * Area Config Builder
- *
- * Pure function for building Unovis Area component configuration.
- */
-
 import { CurveType } from '@unovis/ts';
 import type { AreaConfig, AreaConfigOptions } from '../types';
 
