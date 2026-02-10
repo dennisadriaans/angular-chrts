@@ -8,8 +8,8 @@
 
 ## 📖 Resources
 
-- [**Website**](https://nuxtcharts.com/)
-- [**Documentation**](https://nuxtcharts.com/docs)
+- [**Website**](https://angularcharts.com/)
+- [**Documentation**](https://angularcharts.com/docs)
 
 ## Why Choose Angular Charts?
 
