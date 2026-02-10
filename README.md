@@ -8,8 +8,8 @@
 
 ## 📖 Resources
 
-- [**Website**](https://angularcharts.com/)
-- [**Documentation**](https://angularcharts.com/docs)
+- <a href="https://angularcharts.com/" target="_blank"><strong>Website</strong></a>
+- <a href="https://angularcharts.com/docs" target="_blank"><strong>Documentation</strong></a>
 
 ## Why Choose Angular Charts?
 
